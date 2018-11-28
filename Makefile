@@ -1,8 +1,8 @@
 OPENCV=0
 DEBUG=0
 
-OBJ= #TODO: insert objectfiles here
-EXECOBJS= #TODO:add executable examples
+OBJ= main.o #TODO: insert objectfiles here
+EXECOBJA= #TODO:add executable examples
 
 VPATH=./src/:./examples
 EXEC=boomercv
@@ -27,13 +27,13 @@ LDFLAGS+= `pkg-config --libs opencv`
 COMMON+= `pkg-config --cflags opencv` 
 endif
 
-EXECOBJS = $(addprefix $(OBJDIR), $(EXECOBJS))
+EXECOBJS = $(addprefix $(OBJDIR), $(EXECOBJA))
 OBJS   = $(addprefix $(OBJDIR), $(OBJ))
 DEPS   = $(wildcard include/*.h) Makefile 
 
 all: obj $(EXEC)
 
-$(EXEC): $(OBJS) $(EXECOBJS) 
+$(EXEC): $(OBJS) $(EXECOBJS)
 	$(CC) $(COMMON) $(CFLAGS) $^ -o $@ $(LDFLAGS) 
 
 $(OBJDIR)%.o: %.c $(DEPS)
