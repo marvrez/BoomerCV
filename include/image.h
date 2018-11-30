@@ -19,9 +19,8 @@ typedef struct {
 
 image make_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
-image make_random_image(int w, int h, int c);
 image copy_image(image m);
-void free_image(image m);
+void free_image(image* m);
 
 // load/save functions
 image load_image(const char* filename);
@@ -32,21 +31,21 @@ int save_image_jpg(image m, const char* path, int quality);
 image get_channel(image m, int c);
 
 // colorspace functions
-void rgb_to_hsv(image m);
-void hsv_to_rgb(image m);
-void rgb_to_bgr(image m);
-void bgr_to_rgb(image m);
-void yuv_to_rgb(image m);
-void rgb_to_yuv(image m);
+void rgb_to_hsv(image* m);
+void hsv_to_rgb(image* m);
+void rgb_to_bgr(image* m);
+void bgr_to_rgb(image* m);
+void yuv_to_rgb(image* m);
+void rgb_to_yuv(image* m);
 image rgb_to_grayscale(image m);
 image grayscale_to_rgb(image m, float r, float g, float b);
 
 // image operations
-void translate_image(image m, float s);
-void scale_image(image m, float s);
-void normalize_image(image m);
-void transpose_image(image m);
-void flip_image(image m);
+void translate_image(image* m, float s);
+void scale_image(image* m, float s);
+void normalize_image(image* m);
+void transpose_image(image* m);
+void flip_image(image* m);
 
 image rotate_image(image m, float rad);
 image crop_image(image m, int dx, int dy, int w, int h);
@@ -69,6 +68,5 @@ image gaussian_noise_reduce(image grayscale);
 image equalize_histogram(image m);
 
 unsigned char* get_image_data_hwc(image m);
-void free_image_data(unsigned char* data);
 
 #endif
