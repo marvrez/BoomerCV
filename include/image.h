@@ -19,14 +19,19 @@ typedef struct {
 
 image make_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
+image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes);
 image copy_image(image m);
 void free_image(image* m);
 
-// load/save functions
-image load_image(const char* filename);
-image load_image_memory(const unsigned char* buffer, int buf_len, int c);
-int save_image_png(image m, const char* path);
-int save_image_jpg(image m, const char* path, int quality);
+// load functions
+image load_image(const char* filename, int num_channels);
+image load_image_from_memory(const unsigned char* buffer, int buf_len, int num_channels);
+image load_image_rgb(const char* filename);
+image load_image_grayscale(const char* filename);
+
+// save functions
+int save_image_png(image m, const char* filename);
+int save_image_jpg(image m, const char* filename, int quality);
 
 image get_channel(image m, int c);
 

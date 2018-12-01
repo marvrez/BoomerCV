@@ -26,13 +26,26 @@ image make_empty_image(int w, int h, int c)
     return m;
 }
 
+image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes)
+{
+    image m = make_image(w, h, c);
+    for(int k = 0; k < c; ++k) {
+        for(int j = 0; j < h; ++j) {
+            for(int i = 0; i < w; ++i) {
+                m.data[i + w*j + w*h*k] = (float)bytes[k + c*i + c*w*j]/255.f;
+            }
+        }
+    }
+    return m;
+}
+
 image copy_image(image m) 
 {
     image copy = m;
-	copy.data = calloc(m.w*m.h*m.c, sizeof(float));
-	if (copy.data && m.data) {
-		memcpy(copy.data, m.data, m.w*m.h*m.c * sizeof(float));
-	}
+    copy.data = calloc(m.w*m.h*m.c, sizeof(float));
+    if (copy.data && m.data) {
+        memcpy(copy.data, m.data, m.w*m.h*m.c*sizeof(float));
+    }
     return copy;
 }
 
@@ -41,6 +54,66 @@ void free_image(image* m)
     if (m->data) {
         free(m->data);
     }
+}
+
+image load_image(const char* filename, int num_channels)
+{
+    int w, h, c;
+    unsigned char* data = stbi_load(filename, &w, &h, &c, num_channels);
+    if (!data) {
+        fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
+        exit(0);
+    }
+    if(num_channels) c = num_channels;
+    image m = make_image_from_hwc_bytes(w,h,c,data);
+    free(data);
+    return m;
+}
+
+image load_image_from_memory(const unsigned char* buffer, int buf_len, int num_channels)
+{
+    int w, h, c;
+    unsigned char* data = stbi_load_from_memory(buffer, buf_len, &w, &h, &c, num_channels);
+    if (!data) {
+        fprintf(stderr, "Cannot load image from memory.\nSTB Reason: %s\n", stbi_failure_reason());
+        exit(0);
+    }
+    if(num_channels) c = num_channels;
+    image m = make_image_from_hwc_bytes(w,h,c,data);
+    free(data);
+    return m;
+}
+
+image load_image_rgb(const char* filename)
+{
+    image out = load_image(filename, 3);
+    return out;
+}
+
+image load_image_grayscale(const char* filename)
+{
+    image out = load_image(filename, 1);
+    return out;
+}
+
+int save_image_png(image m, const char* filename)
+{
+    char buffer[256];
+    sprintf(buffer, "%s.png", filename);
+    unsigned char* pixels = get_image_data_hwc(m);
+    int success = stbi_write_png(buffer, m.w, m.h, m.c, pixels, m.w*m.c);
+    if(!success) fprintf(stderr, "Failed to write image %s\n", buffer);
+    return success;
+}
+
+int save_image_jpg(image m, const char* filename, int quality)
+{
+    char buffer[256];
+    sprintf(buffer, "%s.jpg", filename);
+    unsigned char* pixels = get_image_data_hwc(m);
+    int success = stbi_write_jpg(buffer, m.w, m.h, m.c, pixels, quality);
+    if(!success) fprintf(stderr, "Failed to write image %s\n", buffer);
+    return success;
 }
 
 image get_channel(image m, int c)
