@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 
 image make_image(int w, int h, int c)
 {
@@ -125,6 +126,75 @@ image get_channel(image m, int c)
         }
     }
     return out;
+}
+
+void translate_image(image* m, float s)
+{
+    for(int i = 0; i < m->h*m->w*m->c; ++i) {
+        m->data[i] += s;
+    }
+}
+
+void scale_image(image* m, float s)
+{
+    for(int i = 0; i < m->h*m->w*m->c; ++i) {
+        m->data[i] *= s;
+    }
+}
+
+void normalize_image(image* m)
+{
+    float min = FLT_MAX, max = -FLT_MAX;
+    for(int i = 0; i < m->w*m->h*m->c; ++i) {
+        float val = m->data[i];
+        if(val < min) min = val;
+        if(val > max) max = val;
+    }
+
+    if(fabsf(max - min) < 1e-6) {
+        min = 0;
+        max = 1;
+    }
+
+    for(int i = 0; i < m->w*m->h*m->c; ++i) {
+        m->data[i] = (m->data[i] - min) / (max - min);
+    }
+}
+
+void transpose_image(image* m)
+{
+    if(m->w != m->h) {
+        fprintf(stderr, "image did not get transposed as width=%d and height=%d are not the same.", m->w, m->h);
+        return;
+    }
+    for(int k = 0; k < m->c; ++k) {
+        for(int i = 0; i < m->w-1; ++i) {
+            for(int j = i + 1; j < m->w; ++j) {
+                int idx = j + m->w*(i + m->h*k);
+                int transposed_idx = i + m->w*(j + m->h*k);
+
+                float tmp = m->data[idx];
+                m->data[idx] = m->data[transposed_idx];
+                m->data[transposed_idx] = tmp;
+            }
+        }
+    }
+}
+
+void flip_image(image* m)
+{
+    for(int k = 0; k < m->c; ++k) {
+        for(int i = 0; i < m->h; ++i) {
+            for(int j = 0; j < m->w; ++j) {
+                int idx = j + m->w*(i + m->h*k);
+                int flip_idx = (m->w - j - 1) + m->w*(i + m->h*k);
+
+                float tmp  = m->data[idx];
+                m->data[idx] = m->data[flip_idx];
+                m->data[flip_idx] = tmp;
+            }
+        }
+    }
 }
 
 unsigned char* get_image_data_hwc(image m)
