@@ -46,6 +46,8 @@ image rgb_to_grayscale(image m);
 image grayscale_to_rgb(image m, float r, float g, float b);
 
 // image operations
+void fill_image(image* m, float s);
+void clamp_image(image* m);
 void translate_image(image* m, float s);
 void scale_image(image* m, float s);
 void normalize_image(image* m);

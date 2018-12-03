@@ -128,6 +128,21 @@ image get_channel(image m, int c)
     return out;
 }
 
+void fill_image(image* m, float s)
+{
+    for(int i = 0; i < m->h*m->w*m->c; ++i) {
+        m->data[i] = s;
+    }
+}
+
+void clamp_image(image* m)
+{
+    for(int i = 0; i < m->w*m->h*m->c; ++i) {
+        if(m->data[i] < 0.f) m->data[i] = 0.f;
+        if(m->data[i] > 1.f) m->data[i] = 1.f;
+    }
+}
+
 void translate_image(image* m, float s)
 {
     for(int i = 0; i < m->h*m->w*m->c; ++i) {
