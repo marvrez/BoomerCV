@@ -1,6 +1,8 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
+#include "utils.h"
+
 typedef struct {
     int c, h, w;
     float* data;
@@ -22,6 +24,9 @@ image make_empty_image(int w, int h, int c);
 image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes);
 image copy_image(image m);
 void free_image(image* m);
+
+float get_pixel(image m, int x, int y, int c);
+void set_pixel(image* m, int x, int y, int c, float v);
 
 // load functions
 image load_image(const char* filename, int num_channels);

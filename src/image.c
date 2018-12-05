@@ -1,5 +1,7 @@
 #include "image.h"
 
+#include "utils.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -29,15 +31,15 @@ image make_empty_image(int w, int h, int c)
 
 image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes)
 {
-    image m = make_image(w, h, c);
+    image out = make_image(w, h, c);
     for(int k = 0; k < c; ++k) {
-        for(int j = 0; j < h; ++j) {
-            for(int i = 0; i < w; ++i) {
-                m.data[i + w*j + w*h*k] = (float)bytes[k + c*i + c*w*j]/255.f;
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                out.data[j + w*(i + h*k)] = (float)bytes[k + c*(j + w*i)] / 255.f;
             }
         }
     }
-    return m;
+    return out;
 }
 
 image copy_image(image m) 
@@ -55,6 +57,20 @@ void free_image(image* m)
     if (m->data) {
         free(m->data);
     }
+}
+
+float get_pixel(image m, int x, int y, int c)
+{
+    if (x < 0 || x >= m.w || y < 0 || y >=m.h) return 0;
+    if (c < 0 || c >= m.c) return 0;
+    return m.data[x + y*m.w + c*m.h*m.w];
+}
+
+void set_pixel(image* m, int x, int y, int c, float v)
+{
+    if (x < 0 || x >= m->w || y < 0 || y >=m->h) return;
+    if (c < 0 || c >= m->c) return;
+    m->data[x + y*m->w + c*m->h*m->w] = v;
 }
 
 image load_image(const char* filename, int num_channels)
@@ -121,8 +137,9 @@ image get_channel(image m, int c)
 {
     image out = make_image(m.w, m.h, 1);
     if (out.data && c >= 0 && c < m.c) {
+	int start = c*m.w*m.h;
         for (int i = 0; i < m.h*m.w; ++i) {
-            out.data[i] = m.data[i + c*m.w*m.h];
+            out.data[i] = m.data[start + i];
         }
     }
     return out;
@@ -212,6 +229,26 @@ void flip_image(image* m)
     }
 }
 
+image crop_image(image m, int dx, int dy, int w, int h)
+{
+    image cropped_image = make_image(w, h, m.c);
+    for (int k = 0; k < m.c; ++k) {
+        for (int i = 0; i < h; ++i) {
+            for (int j = 0; j < w; ++j) {
+                int r = i + dy, c = j + dx;
+                float val = 0;
+                r = clamp(r, 0, m.h - 1);
+                c = clamp(c, 0, m.w - 1);
+                if (r >= 0 && r < m.h && c >= 0 && c < m.w) {
+                    val = get_pixel(m, c, r, k);
+                }
+                set_pixel(&cropped_image, j, i, k, val);
+            }
+        }
+    }
+    return cropped_image;
+}
+
 unsigned char* get_image_data_hwc(image m)
 {
     unsigned char* data = 0;
@@ -219,8 +256,9 @@ unsigned char* get_image_data_hwc(image m)
         data = calloc(m.w*m.h*m.c, sizeof(unsigned char));
         if (data) {
             for (int k = 0; k < m.c; ++k) {
+		int start = k*m.w*m.h;
                 for (int i = 0; i < m.w*m.h; ++i) {
-                    data[i*m.c + k] = (unsigned char)(255 * m.data[i + k*m.w*m.h]);
+                    data[i*m.c + k] = (unsigned char)(255 * m.data[start + i]);
                 }
             }
         }
