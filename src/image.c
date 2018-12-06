@@ -42,7 +42,7 @@ image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes)
     return out;
 }
 
-image copy_image(image m) 
+image copy_image(image m)
 {
     image copy = m;
     copy.data = calloc(m.w*m.h*m.c, sizeof(float));
@@ -247,6 +247,60 @@ image crop_image(image m, int dx, int dy, int w, int h)
         }
     }
     return cropped_image;
+}
+
+float nn_interpolate(image m, float x, float y, int c)
+{
+    int rounded_x = (int) round(x), rounded_y = (int) round(y);
+    float interpolated_val = get_pixel(m, rounded_x, rounded_y, c);
+    return interpolated_val;
+}
+
+image nn_resize(image m, int w, int h)
+{
+    image out = make_image(w, h, m.c);
+    float w_scale = (float)m.w / w, h_scale = (float)m.h / h;
+    for(int k = 0; k < m.c; ++k) {
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                float y = (i + 0.5f)*h_scale - 0.5f;
+                float x = (j + 0.5f)*w_scale - 0.5f;
+                float val = nn_interpolate(m, x, y, k);
+
+                set_pixel(&out, j, i, k, val);
+            }
+        }
+    }
+    return out;
+}
+
+float bilinear_interpolate(image m, float x, float y, int c)
+{
+    int lx = (int) floorf(x), ly = (int) floorf(y);
+    float dx = x - lx, dy = y - ly;
+    float interpolated_val = get_pixel(m, x, y, c)*(1-dx)*(1-dy) +
+                             get_pixel(m, x+1, y, c)*dx*(1-dy) +
+                             get_pixel(m, x, y+1, c)*(1-dx)*dy +
+                             get_pixel(m, x+1, y+1, c)*dx*dy;
+    return interpolated_val;
+}
+
+image bilinear_resize(image m, int w, int h)
+{
+    image out = make_image(w, h, m.c);
+    float w_scale = (float)m.w / w, h_scale = (float)m.h / h;
+    for(int k = 0; k < m.c; ++k) {
+        for(int i = 0; i < h; ++i) {
+            for(int j = 0; j < w; ++j) {
+                float y = (i + 0.5f)*h_scale - 0.5f;
+                float x = (j + 0.5f)*w_scale - 0.5f;
+                float val = bilinear_interpolate(m, x, y, k);
+
+                set_pixel(&out, j, i, k, val);
+            }
+        }
+    }
+    return out;
 }
 
 unsigned char* get_image_data_hwc(image m)
