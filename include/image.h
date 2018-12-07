@@ -10,9 +10,9 @@ typedef struct {
 
 typedef struct {
     int x, y;
-    int w, h;  
+    int w, h;
     float score;
-    const char name; 
+    const char name;
 } box;
 
 typedef struct {
@@ -61,23 +61,12 @@ void flip_image(image* m);
 
 image rotate_image(image m, float rad);
 image crop_image(image m, int dx, int dy, int w, int h);
-image rotate_crop_image(image m, float rad, float s, int w, int h, float dx, float dy, float aspect);
 
 // resizing
 float nn_interpolate(image m, float x, float y, int c);
 image nn_resize(image m, int w, int h);
 float bilinear_interpolate(image m, float x, float y, int c);
 image bilinear_resize(image m, int w, int h);
-
-// thresholding
-image threshold_image(image m, float thresh);
-image otsu_binarize_image(image m);
-image binarize_image(image m, int reverse);
-image dilate_image(image m, int times);
-image erode_image(image m, int times);
-
-image gaussian_noise_reduce(image grayscale);
-image equalize_histogram(image m);
 
 unsigned char* get_image_data_hwc(image m);
 
