@@ -54,24 +54,24 @@ void run_resize(int argc,  char** argv)
     int width = -1, height = -1;
     resize_type type = BILINEAR;
 
-	for (int i = 1; i < argc; ++i) {
-		if (i < argc - 1) {
-			if (strcmp("-i", argv[i]) == 0) {
-				strcpy(input_path, argv[i+1]);
-			}
+    for (int i = 1; i < argc; ++i) {
+        if (i < argc - 1) {
+            if (strcmp("-i", argv[i]) == 0) {
+                strcpy(input_path, argv[i+1]);
+            }
             else if (strcmp("-o", argv[i]) == 0) {
-				strcpy(output_path, argv[i+1]);
-			}
+                strcpy(output_path, argv[i+1]);
+            }
             else if (strcmp("-w", argv[i]) == 0) {
-				width = atoi(argv[i+1]);
-			}
+                width = atoi(argv[i+1]);
+            }
             else if (strcmp("-h", argv[i]) == 0) {
-				height = atoi(argv[i+1]);
-			}
-			else if (strcmp("-t", argv[i]) == 0) {
-				type = get_resize_type(argv[i+1]);
-			}
-		}
+                height = atoi(argv[i+1]);
+            }
+            else if (strcmp("-t", argv[i]) == 0) {
+                type = get_resize_type(argv[i+1]);
+            }
+        }
     }
     image resized = resize_image_from_path(input_path, width, height, type);
     if (output_path[0] == '\0') {
