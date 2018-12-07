@@ -2,7 +2,7 @@ OPENCV=0
 DEBUG=0
 
 OBJ= main.o image.o utils.o #TODO: insert objectfiles here
-EXECOBJA= #TODO:add executable examples
+EXECOBJA= resize.o #TODO:add executable examples
 
 VPATH=./src/:./examples
 EXEC=boomercv
