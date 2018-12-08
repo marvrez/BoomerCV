@@ -229,6 +229,24 @@ void flip_image(image* m)
     }
 }
 
+image rotate_image(image m, float rad)
+{
+    int cx = m.w / 2, cy = m.h / 2;
+    image rotated_image = make_image(m.w, m.h, m.c);
+    for(int c = 0; c < m.c; ++c) {
+        for(int y = 0; y < m.h; ++y) {
+            for(int x = 0; x < m.w; ++x) {
+                int rx = cosf(rad)*(x - cx) - sinf(rad)*(y - cy) + cx;
+                int ry = sinf(rad)*(x - cx) + cosf(rad)*(y - cy) + cy;
+                float val = bilinear_interpolate(m, rx, ry, c);
+
+                set_pixel(&rotated_image, x, y, c, val);
+            }
+        }
+    }
+    return rotated_image;
+}
+
 image crop_image(image m, int dx, int dy, int w, int h)
 {
     image cropped_image = make_image(w, h, m.c);
