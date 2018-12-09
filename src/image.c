@@ -145,6 +145,195 @@ image get_channel(image m, int c)
     return out;
 }
 
+image rgb_to_grayscale(image m)
+{
+    if(m.c == 1) return copy_image(m);
+
+    image gray = make_image(m.w, m.h, 1);
+    const float scale[] = { 0.299, 0.587, 0.114 };
+    for (int k = 0; k < m.c; ++k) {
+        int start = k*m.w*m.h;
+        for (int i = 0; i < m.h*m.w; ++i) {
+            gray.data[i] += scale[k] * m.data[start + i];
+        }
+    }
+    return gray;
+}
+
+void rgb_to_grayscale_inplace(image* m)
+{
+    if(m->c != 3) return;
+    const float scale[] = {0.299, 0.587, 0.114};
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
+            float grayscale_val = 0;
+            for(int k = 0; k < 3; ++k){
+                grayscale_val += scale[k] * get_pixel(*m, j, i, k);
+            }
+            set_pixel(m, j, i, 0, grayscale_val);
+            set_pixel(m, j, i, 1, grayscale_val);
+            set_pixel(m, j, i, 2, grayscale_val);
+        }
+    }
+}
+
+image grayscale_to_rgb(image m, float r, float g, float b)
+{
+    image rgb = make_empty_image(m.w, m.h, 3);
+    if(m.c != 1) return rgb;
+
+    const float scale[] = {r, g, b};
+    for(int k = 0; k < 3; ++k) {
+        for(int i = 0; i < m.h; ++i) {
+            for(int j = 0; j < m.w; ++j) {
+                rgb.data[j + m.w*(i + m.h*k)] += scale[k]*m.data[j + m.w*i];
+            }
+        }
+    }
+    return rgb;
+}
+
+void rgb_to_hsv(image* m)
+{
+    if (m->c != 3) return;
+
+    float r, g, b;
+    float h, s, v;
+    for (int i = 0; i < m->h; ++i) {
+        for (int j = 0; j < m->w; ++j) {
+            r = get_pixel(*m, j, i, 0),
+            g = get_pixel(*m, j, i, 1),
+            b = get_pixel(*m, j, i, 2);
+
+            float max = max3f(r, g, b), min = min3f(r, g, b);
+            float delta = max - min;
+            v = max;
+            if (max == 0) s = h = 0; // h is actually not defined, but oh well..
+            else {
+                s = delta / max;
+
+                if (r >= max) h = (g - b) / delta; // between yellow & magenta
+                else if (g >= max) h = 2.f + (b - r) / delta; // between cyan & yellow
+                else h = 4.f + (r - g) / delta; // between magenta & cyan
+
+                if (h < 0.f) h += 6.f; // only positive numbers
+                h /= 6.f; // normalize
+            }
+            set_pixel(m, j, i, 0, h);
+            set_pixel(m, j, i, 1, s);
+            set_pixel(m, j, i, 2, v);
+        }
+    }
+}
+
+void hsv_to_rgb(image* m)
+{
+    if(m->c != 3) return;
+
+    float r, g, b;
+    float h, s, v;
+    float f, p, q, t;
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
+            h = 6*get_pixel(*m, j, i, 0);
+            s = get_pixel(*m, j, i, 1);
+            v = get_pixel(*m, j, i, 2);
+            if (s == 0) {
+                r = g = b = v;
+            }
+            else {
+                int index = floor(h);
+                f = h - index;
+                p = v*(1 - s);
+                q = v*(1 - s*f);
+                t = v*(1 - s*(1 - f));
+                switch (index) {
+                case 0:
+                    r = v; g = t; b = p;
+                    break;
+                case 1:
+                    r = q; g = v; b = p;
+                    break;
+                case 2:
+                    r = p; g = v; b = t;
+                    break;
+                case 3:
+                    r = p; g = q; b = v;
+                    break;
+                case 4:
+                    r = t; g = p; b = v;
+                    break;
+                default:
+                    r = v; g = p; b = q;
+                    break;
+                }
+            }
+            set_pixel(m, j, i, 0, r);
+            set_pixel(m, j, i, 1, g);
+            set_pixel(m, j, i, 2, b);
+        }
+    }
+}
+
+void rgb_to_bgr(image* m)
+{
+    if (m->c != 3 || !m->data) return;
+    for (int i = 0; i < m->w*m->h; ++i) {
+        float swap = m->data[i];
+        m->data[i] = m->data[i + m->w*m->h * 2];
+        m->data[i + m->w*m->h * 2] = swap;
+    }
+}
+
+void bgr_to_rgb(image* m)
+{
+    rgb_to_bgr(m);
+}
+
+void yuv_to_rgb(image* m)
+{
+    if(m->c != 3) return;
+    float r, g, b;
+    float y, u, v;
+    for(int i = 0; i < m->h; ++i){
+        for(int j = 0; j < m->w; ++j){
+            y = get_pixel(*m, j, i, 0);
+            u = get_pixel(*m, j, i, 1);
+            v = get_pixel(*m, j, i, 2);
+
+            r = y + 1.13983f*v;
+            g = y + -0.39465f*u + -0.58060f*v;
+            b = y + 2.03211f*u;
+
+            set_pixel(m, j, i, 0, r);
+            set_pixel(m, j, i, 1, g);
+            set_pixel(m, j, i, 2, b);
+        }
+    }
+}
+
+void rgb_to_yuv(image* m)
+{
+    if(m->c != 3) return;
+    float r, g, b;
+    float y, u, v;
+    for(int i = 0; i < m->h; ++i){
+        for(int j = 0; j < m->w; ++j){
+            r = get_pixel(*m, j, i, 0);
+            g = get_pixel(*m, j, i, 1);
+            b = get_pixel(*m, j, i, 2);
+
+            y = 0.299f*r + 0.587f*g + 0.114f*b;
+            u = -0.14713f*r + -0.28886f*g + 0.436f*b;
+            v = 0.615f*r + -0.51499f*g + -0.10001f*b;
+
+            set_pixel(m, j, i, 0, y);
+            set_pixel(m, j, i, 1, u);
+            set_pixel(m, j, i, 2, v);
+        }
+    }
+}
+
 void fill_image(image* m, float s)
 {
     for(int i = 0; i < m->h*m->w*m->c; ++i) {

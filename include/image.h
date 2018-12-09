@@ -41,14 +41,16 @@ int save_image_jpg(image m, const char* filename, int quality);
 image get_channel(image m, int c);
 
 // colorspace functions
+image rgb_to_grayscale(image m);
+void rgb_to_grayscale_inplace(image* m);
+image grayscale_to_rgb(image m, float r, float g, float b);
+
 void rgb_to_hsv(image* m);
 void hsv_to_rgb(image* m);
 void rgb_to_bgr(image* m);
 void bgr_to_rgb(image* m);
 void yuv_to_rgb(image* m);
 void rgb_to_yuv(image* m);
-image rgb_to_grayscale(image m);
-image grayscale_to_rgb(image m, float r, float g, float b);
 
 // image operations
 void fill_image(image* m, float s);
