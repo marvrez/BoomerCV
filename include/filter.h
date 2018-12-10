@@ -6,6 +6,7 @@
 image gaussian_noise_reduce(image grayscale);
 image equalize_histogram(image m);
 
+// morphological transformations
 image dilate_image(image m, int times);
 image erode_image(image m, int times);
 
