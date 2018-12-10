@@ -47,7 +47,8 @@ image resize_image_from_path(char* path, int output_w, int output_h, resize_type
 void run_resize(int argc,  char** argv)
 {
     if(argc < 6) {
-        fprintf(stderr, "usage: ./boomercv resize -i <input_path> -h <height> -w <width> -o [OPTIONAL]<output_path> -t [OPTIONAL]<resize_type>\n");
+        fprintf(stderr, "usage: ./boomercv resize -i <input_path> -h <height> -w <width> [OPTIONAL PARAMETERS: -o <output_path> -t <resize_type>]\n");
+        fprintf(stderr, "<resize_type> is one of [bilinear, nearest]\n");
         return;
     }
     char input_path[256] = {0}, output_path[512] = {0};
