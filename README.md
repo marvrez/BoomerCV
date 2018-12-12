@@ -14,7 +14,7 @@ Setup and usage guides are for zoomers, but just in case...
   make -j
 ```
 
-If any errors show up... try to fix them? Otherwise everything should be working, but you should, just in case, check the next section.
+If any errors show up, it really do be like that sometimes. Otherwise everything should be working, but you should, just in case, check the next section.
 
 ## Usage
 BoomerCV comes with some cool examples.
@@ -27,5 +27,6 @@ Where `<function>` is currently one of
 
 * `grayscale` - grayscale a given input image
 * `resize` - resize a given input image
+* `binarize` - binarize a given input image
 
 More instructions will be shown about these functions if you run them without any additional parameters.

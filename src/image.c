@@ -510,6 +510,71 @@ image bilinear_resize(image m, int w, int h)
     return out;
 }
 
+image threshold_image(image m, float thresh)
+{
+    image out = make_image(m.w, m.h, m.c);
+    for (int i = 0; i < m.w*m.h*m.c; ++i) {
+        out.data[i] = (m.data[i] > thresh) ? 1.f : 0.f;
+    }
+    return out;
+}
+
+image otsu_binarize_image(image m)
+{
+    #define MAX_INTENSITY 256
+    image out = make_image(m.w, m.h, m.c);
+
+    int i, N = m.w*m.h;
+    int hist[MAX_INTENSITY] = { 0 };
+    float prob[MAX_INTENSITY], w[MAX_INTENSITY]; // pdf and cdf of intensities
+    float mu[MAX_INTENSITY] = { 0.0f }; // mean value for separation
+    float sigma[MAX_INTENSITY] = { 0.0f }; // inter-class variance
+
+    // create histogram
+    for (i = 0; i < N*m.c; ++i) {
+        ++hist[(unsigned char)(255.f * m.data[i])];
+    }
+    // calculate probability density from histogram
+    for (i = 0; i < MAX_INTENSITY; ++i) {
+        prob[i] = (float)hist[i] / N;
+    }
+
+    w[0] = prob[0];
+    for (i = 1; i < MAX_INTENSITY; ++i) {
+        w[i] = w[i - 1] + prob[i];
+        mu[i] = mu[i - 1] + i*prob[i];
+    }
+
+    // maximize sigma(inter-class variance) to determine optimal threshold value
+    float threshold = 0.0f, max_sigma = 0.0f;
+    for (i = 0; i < MAX_INTENSITY - 1; ++i) {
+        if (w[i] != 0.0f && w[i] != 1.0f) {
+            sigma[i] = pow(mu[MAX_INTENSITY - 1]*w[i] - mu[i], 2) / (w[i]*(1.0f - w[i]));
+        }
+        if (sigma[i] > max_sigma) {
+            max_sigma = sigma[i];
+            threshold = (float)i;
+        }
+    }
+    threshold /= 255.f;
+
+    // binarize based on newly found threshold
+    for (i = 0; i < N*m.c; ++i) {
+        out.data[i] = m.data[i] > threshold ? 1.0f : 0.0f;
+    }
+    return out;
+}
+
+image binarize_image(image m, int reverse)
+{
+    image out = copy_image(m);
+    for (int i = 0; i < m.w*m.h*m.c; ++i) {
+        if (out.data[i] > 0.5f) out.data[i] = reverse ? 1.f : 0.f;
+        else out.data[i] = reverse ? 0.f : 1.f;
+    }
+    return out;
+}
+
 unsigned char* get_image_data_hwc(image m)
 {
     unsigned char* data = 0;
