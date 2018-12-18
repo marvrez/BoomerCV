@@ -20,10 +20,10 @@ int clamp(int val, int min, int max)
 
 float max3f(float a, float b, float c)
 {
-	 return (a > b) ? ( (a > c) ? a : c) : ( (b > c) ? b : c);
+    return (a > b) ? ( (a > c) ? a : c) : ( (b > c) ? b : c);
 }
 
 float min3f(float a, float b, float c)
 {
-	 return (a < b) ? ( (a < c) ? a : c) : ( (b < c) ? b : c);
+    return (a < b) ? ( (a < c) ? a : c) : ( (b < c) ? b : c);
 }
