@@ -8,6 +8,20 @@ typedef struct {
     float* data;
 } image;
 
+inline float get_pixel(image m, int x, int y, int c)
+{
+    if (x < 0 || x >= m.w || y < 0 || y >=m.h) return 0;
+    if (c < 0 || c >= m.c) return 0;
+    return m.data[x + y*m.w + c*m.h*m.w];
+}
+
+inline void set_pixel(image* m, int x, int y, int c, float v)
+{
+    if (x < 0 || x >= m->w || y < 0 || y >=m->h) return;
+    if (c < 0 || c >= m->c) return;
+    m->data[x + y*m->w + c*m->h*m->w] = v;
+}
+
 typedef struct {
     int x, y;
     int w, h;
@@ -24,9 +38,6 @@ image make_empty_image(int w, int h, int c);
 image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes);
 image copy_image(image m);
 void free_image(image* m);
-
-float get_pixel(image m, int x, int y, int c);
-void set_pixel(image* m, int x, int y, int c, float v);
 
 // load functions
 image load_image(const char* filename, int num_channels);
@@ -61,14 +72,12 @@ void normalize_image(image* m);
 void transpose_image(image* m);
 void flip_image(image* m);
 
+// resizing
+image nn_resize(image m, int w, int h);
+image bilinear_resize(image m, int w, int h);
+
 image rotate_image(image m, float rad);
 image crop_image(image m, int dx, int dy, int w, int h);
-
-// resizing
-float nn_interpolate(image m, float x, float y, int c);
-image nn_resize(image m, int w, int h);
-float bilinear_interpolate(image m, float x, float y, int c);
-image bilinear_resize(image m, int w, int h);
 
 // binarizing
 image threshold_image(image m, float thresh);
