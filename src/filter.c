@@ -9,18 +9,20 @@ image convolve_image(image m, image filter, int preserve)
 {
     assert(m.c == filter.c || filter.c == 1);
     int single_channel = filter.c == 1;
+    int k, i, j, dx, dy;
     image out = make_image(m.w, m.h, preserve ? m.c : 1);
-    for(int k = 0; k < m.c; ++k) {
+    for(k = 0; k < m.c; ++k) {
         int filter_channel = single_channel ? 0 : k, out_channel = preserve ? k : 0;
-        for(int i = 0; i < m.h; ++i) {
-            for(int j = 0; j < m.w; ++j) {
-                for(int dy = 0; dy < filter.h; ++dy) {
-                    for(int dx = 0; dx < filter.w; ++dx) {
-                        float weight = get_pixel(filter, dx, dy, filter_channel);
-                        float val = get_pixel(m, j-filter.w/2+dx, i-filter.h/2+dy, k);
-                        out.data[j + out.w*(i + out_channel*out.h)] += val*weight;
+        for(i = 0; i < m.h; ++i) {
+            for(j = 0; j < m.w; ++j) {
+                float sum = 0.f;
+                for(dy = 0; dy < filter.h; ++dy) {
+                    for(dx = 0; dx < filter.w; ++dx) {
+                        sum += get_pixel(filter, dx, dy, filter_channel) *
+                                get_pixel(m, j-filter.w/2+dx, i-filter.h/2+dy, k);
                     }
                 }
+                out.data[j + out.w*(i + out_channel*out.h)] += sum;
             }
         }
     }
@@ -62,6 +64,20 @@ inline image make_smoothing_filter()
     f.data[3] = val; f.data[4] = val; f.data[5] = val;
     f.data[6] = val; f.data[7] = val; f.data[8] = val;
     return f;
+}
+
+image colorize_sobel(image m)
+{
+    image* s = sobel_image(m);
+    normalize_image(&s[0]); normalize_image(&s[1]);
+    image out = make_image(m.w, m.h, 3);
+    memcpy(out.data, s[1].data, m.w*m.h*sizeof(float));
+    memcpy(out.data+m.w*m.h, s[0].data, m.w*m.h*sizeof(float));
+    memcpy(out.data+2*m.w*m.h, s[0].data, m.w*m.h*sizeof(float));
+    hsv_to_rgb(&out);
+    free_image(&s[0]); free_image(&s[1]);
+    free(s);
+    return out;
 }
 
 image* sobel_image(image m)
