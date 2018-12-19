@@ -29,6 +29,14 @@ image convolve_image(image m, image filter, int preserve)
     return out;
 }
 
+inline void transpose_1d_filter(image* filter)
+{
+    assert(filter->w == 1 || filter->h == 1);
+    int tmp = filter->w;
+    filter->w = filter->h;
+    filter->h = tmp;
+}
+
 inline image make_gx_filter()
 {
     image f = make_image(3,3,1);
@@ -56,16 +64,26 @@ inline image make_sharpen_filter()
     return f;
 }
 
-inline image make_smoothing_filter()
+inline image make_1d_box(int w)
 {
-    image f = make_image(3,3,1);
-    float val = 1.f / 9.f;
-    f.data[0] = val; f.data[1] = val; f.data[2] = val;
-    f.data[3] = val; f.data[4] = val; f.data[5] = val;
-    f.data[6] = val; f.data[7] = val; f.data[8] = val;
+    image f = make_image(1, w, 1);
+    for (int i = 0; i < w; ++i) {
+        f.data[i] = 1.f / w;
+    }
     return f;
 }
 
+inline image make_1d_gaussian(float sigma)
+{
+    int w = ((int)(3*sigma)) | 1;
+    int offset = w / 2;
+    image f = make_image(1, w, 1);
+    for(int i = 0 - offset; i < w - offset; ++i) {
+        float val = 1.f/sqrtf(2*M_PI*sigma*sigma)*expf((-i*i)/(2.f*sigma*sigma));
+        set_pixel(&f, 0, i + offset, 0, val);
+    }
+    return f;
+}
 image colorize_sobel(image m)
 {
     image* s = sobel_image(m);
@@ -105,12 +123,24 @@ image sharpen_image(image m)
     return out;
 }
 
-image smoothen_image(image m)
+image smoothen_image(image m, int w)
 {
-    image smoothing_filter = make_smoothing_filter();
-    image out = convolve_image(m, smoothing_filter, 1);
-    clamp_image(&out);
-    free_image(&smoothing_filter);
+    image box_1d = make_1d_box(w);
+    image out_tmp = convolve_image(m, box_1d, 1);
+    transpose_1d_filter(&box_1d);
+    image out = convolve_image(out_tmp, box_1d, 1);
+    free_image(&box_1d); free_image(&out_tmp);
+    return out;
+}
+
+// helper function for canny edge detection
+image gaussian_noise_reduce(image m, float sigma)
+{
+    image gauss_1d = make_1d_gaussian(sigma);
+    image out_tmp = convolve_image(m, gauss_1d, 1);
+    transpose_1d_filter(&gauss_1d);
+    image out = convolve_image(out_tmp, gauss_1d, 1);
+    free_image(&gauss_1d); free_image(&out_tmp);
     return out;
 }
 
