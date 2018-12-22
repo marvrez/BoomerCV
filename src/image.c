@@ -281,8 +281,8 @@ void yuv_to_rgb(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, u, v;
-    for(int i = 0; i < m->h; ++i){
-        for(int j = 0; j < m->w; ++j){
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
             y = get_pixel(*m, j, i, 0);
             u = get_pixel(*m, j, i, 1);
             v = get_pixel(*m, j, i, 2);
@@ -303,8 +303,8 @@ void rgb_to_yuv(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, u, v;
-    for(int i = 0; i < m->h; ++i){
-        for(int j = 0; j < m->w; ++j){
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
             r = get_pixel(*m, j, i, 0);
             g = get_pixel(*m, j, i, 1);
             b = get_pixel(*m, j, i, 2);
@@ -316,6 +316,50 @@ void rgb_to_yuv(image* m)
             set_pixel(m, j, i, 0, y);
             set_pixel(m, j, i, 1, u);
             set_pixel(m, j, i, 2, v);
+        }
+    }
+}
+
+void ycbcr_to_rgb(image* m)
+{
+    if(m->c != 3) return;
+    float r, g, b;
+    float y, cb, cr;
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
+            y = get_pixel(*m, j, i, 0);
+            cb = get_pixel(*m, j, i, 1);
+            cr = get_pixel(*m, j, i, 2);
+
+            r = y + 1.402f*(cr - 0.5f);
+            g = y - 0.344136f*(cb - 0.5f) - 0.714136*(cr-0.5f);
+            b = y + 1.772f*(cb - 0.5f);
+
+            set_pixel(m, j, i, 0, r);
+            set_pixel(m, j, i, 1, g);
+            set_pixel(m, j, i, 2, b);
+        }
+    }
+}
+
+void rgb_to_ycbcr(image* m)
+{
+    if(m->c != 3) return;
+    float r, g, b;
+    float y, cb, cr;
+    for(int i = 0; i < m->h; ++i) {
+        for(int j = 0; j < m->w; ++j) {
+            r = get_pixel(*m, j, i, 0);
+            g = get_pixel(*m, j, i, 1);
+            b = get_pixel(*m, j, i, 2);
+
+            y = 0.299f*r + 0.587f*g + 0.114f*b;
+            cb = 0.5f - 0.168736f*r - 0.331264f*g + 0.5f*b;
+            cr = 0.5f + 0.5f*r - 0.418688f*g - 0.081312f*b;
+
+            set_pixel(m, j, i, 0, y);
+            set_pixel(m, j, i, 1, cb);
+            set_pixel(m, j, i, 2, cr);
         }
     }
 }
@@ -404,7 +448,7 @@ void flip_image(image* m)
     }
 }
 
-inline float bilinear_interpolate(image m, float x, float y, int c)
+static inline float bilinear_interpolate(image m, float x, float y, int c)
 {
     int lx = (int) floorf(x), ly = (int) floorf(y);
     float dx = x - lx, dy = y - ly;
@@ -415,7 +459,7 @@ inline float bilinear_interpolate(image m, float x, float y, int c)
     return interpolated_val;
 }
 
-inline float nn_interpolate(image m, float x, float y, int c)
+static inline float nn_interpolate(image m, float x, float y, int c)
 {
     int rounded_x = (int) round(x), rounded_y = (int) round(y);
     float interpolated_val = get_pixel(m, rounded_x, rounded_y, c);
@@ -549,6 +593,7 @@ image otsu_binarize_image(image m)
     for (i = 0; i < N*m.c; ++i) {
         out.data[i] = m.data[i] > threshold ? 1.0f : 0.0f;
     }
+    #undef MAX_INTENSITY
     return out;
 }
 

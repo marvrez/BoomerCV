@@ -62,6 +62,8 @@ void rgb_to_bgr(image* m);
 void bgr_to_rgb(image* m);
 void yuv_to_rgb(image* m);
 void rgb_to_yuv(image* m);
+void ycbcr_to_rgb(image* m);
+void rgb_to_ycbcr(image* m);
 
 // image operations
 void fill_image(image* m, float s);
