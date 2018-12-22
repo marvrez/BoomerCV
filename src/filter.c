@@ -237,3 +237,107 @@ image erode_image(image m, int times)
     free_image(&tmp);
     return out;
 }
+
+static inline int hilditch_func_nc8(int *b)
+{
+    int n_odd[4] = { 1, 3, 5, 7 }; // odd-number neighbors
+    int j, sum = 0, d[10];
+
+    for(int i = 0; i <= 9; ++i) {
+        d[i] = abs(b[i%8]) == 1 ? 1 : 0;
+    }
+    for(int i = 0; i < 4; ++i) {
+        j = n_odd[i];
+        sum += d[j] - d[j]*d[j + 1]*d[j + 2];
+    }
+    return sum;
+}
+
+image skeletonize_image(image m)
+{
+    // hilditch's algorithm
+    int offset[9][2] = { { 0,0 },{ 1,0 },{ 1,-1 },{ 0,-1 },{ -1,-1 },
+                         { -1,0 },{ -1,1 },{ 0,1 },{ 1,1 } };
+    int n_odd[4] = { 1, 3, 5, 7 }; // odd-number neighbors
+    int b[9]; // gray levels for the 9 neighbors
+    int condition[6] = {0}; // valid for conditions 1-6
+    int counter; // number of changing points
+    int i, sum;
+    image out;
+
+    if(!m.data || m.c != 1) return make_empty_image(0, 0, 0);
+    out = copy_image(m);
+    do {
+        counter = 0;
+        for(int y = 0; y < m.h; ++y) {
+            for(int x = 0; x < m.w; ++x) {
+                // substitution of 9-neighbor gray values
+                for(i = 0; i < 9; ++i) {
+                    b[i] = 0;
+                    int nx = x + offset[i][0], ny = y + offset[i][1];
+                    if (nx >= 0 && nx < m.w && ny >= 0 && ny < m.h) {
+                        if(out.data[ny*m.w + nx] == 0) b[i] = 1;
+                        else if(out.data[ny*m.w + nx] == 2) b[i] = -1;
+                    }
+                }
+                for(i = 0; i < 6; ++i) condition[i] = 0;
+                // condition 1: figure point
+                if(b[0] == 1) condition[0] = 1;
+
+                // condition 2: boundary point
+                sum = 0;
+                for(i = 0; i < 4; ++i) {
+                    sum += 1 - abs(b[n_odd[i]]);
+                }
+                if(sum >= 1) condition[1] = 1;
+
+                // condition 3: endpoint conservation
+                sum = 0;
+                for(i = 1; i <= 8; ++i) {
+                    sum += abs(b[i]);
+                }
+                if (sum >= 2) condition[2] = 1;
+
+                // condition 4: isolated point conservation
+                sum = 0;
+                for (i = 1; i <= 8; ++i) {
+                    if (b[i] == 1) ++sum;
+                }
+                if (sum >= 1) condition[3] = 1;
+
+                // condition 5: connectivity conservation
+                if (hilditch_func_nc8(b) == 1) condition[4] = 1;
+
+                // condition 6: one-side elimination for line-width of two
+                sum = 0;
+                for(i = 1; i <= 8; ++i) {
+                    if (b[i] != -1) ++sum;
+                    else {
+                        int tmp = b[i];
+                        b[i] = 0;
+                        if (hilditch_func_nc8(b) == 1) ++sum;
+                        b[i] = tmp;
+                    }
+                }
+                if(sum == 8) condition[5] = 1;
+
+                // final decision
+                if(condition[0] && condition[1] && condition[2] &&
+                condition[3] && condition[4] && condition[5]) {
+                    out.data[y*m.w + x] = 2;
+                    ++counter;
+                }
+            } // end of x
+        } // end of y
+
+        if(counter != 0) {
+            for(int y = 0; y < m.h; ++y) {
+                for(int x = 0; x < m.w; ++x) {
+                    if(out.data[y*m.w + x] == 2) out.data[y*m.w + x] = 1;
+                }
+            }
+        }
+    } while(counter != 0);
+
+    return out;
+}

@@ -16,6 +16,6 @@ image gaussian_noise_reduce(image m, float sigma);
 // morphological transformations
 image dilate_image(image m, int times);
 image erode_image(image m, int times);
-image hilditch_thin_image(image m);
+image skeletonize_image(image m);
 
 #endif

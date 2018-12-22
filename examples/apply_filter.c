@@ -12,14 +12,14 @@ typedef enum {
     SOBEL,
     SOBEL_COLOR,
     EQUALIZE_HISTOGRAM,
-    THIN,
+    SKELETONIZE,
 } filter_type;
 
 filter_type get_filter_type(char* type_str)
 {
     if(strcmp(type_str, "smooth") == 0) return SMOOTH;
     if(strcmp(type_str, "equalize") == 0) return EQUALIZE_HISTOGRAM;
-    if(strcmp(type_str, "thin") == 0) return THIN;
+    if(strcmp(type_str, "skeletonize") == 0) return SKELETONIZE;
     if(strcmp(type_str, "sharp") == 0) return SHARP;
     if(strcmp(type_str, "sobel") == 0) return SOBEL;
     if(strcmp(type_str, "sobel_color") == 0) return SOBEL_COLOR;
@@ -31,7 +31,7 @@ filter_type get_filter_type(char* type_str)
 image filter_image_from_path(char* path, filter_type type)
 {
     image original = load_image_rgb(path);
-    image out = make_empty_image(original.w, original.h, original.c), *s;
+    image out = make_empty_image(original.w, original.h, original.c), *s, binarized, gray;
 
     double t1 = time_now();
     switch(type) {
@@ -59,8 +59,12 @@ image filter_image_from_path(char* path, filter_type type)
         case EQUALIZE_HISTOGRAM:
             out = equalize_histogram(original);
             break;
-        case THIN:
-            // out = hilditch_thin_image(original); //TODO: implement
+        case SKELETONIZE:
+            gray = rgb_to_grayscale(original);
+            binarized = threshold_image(gray, 0.5f);
+            out = skeletonize_image(binarized);
+            free_image(&gray);
+            free_image(&binarized);
             break;
         default:
             out = smoothen_image(original, 10);
@@ -76,7 +80,7 @@ image filter_image_from_path(char* path, filter_type type)
 void run_filter(int argc,  char** argv)
 {
     if(argc < 6) {
-        fprintf(stderr, "usage: ./boomercv filter -i <input_path> -t [smooth, thin, sharp, sobel, sobel_color, dilate, erode, equalize] [OPTIONAL PARAMETERS: -o <output_path>]\n");
+        fprintf(stderr, "usage: ./boomercv filter -i <input_path> -t [smooth, skeletonize, sharp, sobel, sobel_color, dilate, erode, equalize] [OPTIONAL PARAMETERS: -o <output_path>]\n");
         return;
     }
     char input_path[256] = {0}, output_path[512] = {0};
