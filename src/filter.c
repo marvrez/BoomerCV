@@ -106,7 +106,7 @@ image equalize_histogram(image m)
     for(int i = 0; i < MAX_INTENSITY; ++i) {
         count += hist[i];
         cdf[i] = 1.f*count/n;
-        transform_table[i] = roundf(cdf[i]*(MAX_INTENSITY-1))/255.f;
+        transform_table[i] = floorf(cdf[i]*(MAX_INTENSITY-1))/255.f;
     }
     for(int i = 0; i < n; ++i) {
         out.data[i] = transform_table[(unsigned char)(255*m.data[i])];
