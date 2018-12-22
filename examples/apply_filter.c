@@ -42,10 +42,14 @@ image filter_image_from_path(char* path, filter_type type)
             out = sharpen_image(original);
             break;
         case ERODE:
-            out = erode_image(original, 10);
+            gray = rgb_to_grayscale(original);
+            out = erode_image(gray, 10);
+            free_image(&gray);
             break;
         case DILATE:
-            out = dilate_image(original, 10);
+            gray = rgb_to_grayscale(original);
+            out = dilate_image(gray, 10);
+            free_image(&gray);
             break;
         case SOBEL:
             s = sobel_image(original);
