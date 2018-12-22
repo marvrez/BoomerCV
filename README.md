@@ -28,5 +28,7 @@ Where `<function>` is currently one of
 * `grayscale` - grayscale a given input image
 * `resize` - resize a given input image
 * `binarize` - binarize a given input image
+* `filter` - apply a chosen filter on a given image
+* `lines` - find lines in a given image
 
 More instructions will be shown about these functions if you run them without any additional parameters.

@@ -33,6 +33,10 @@ typedef struct {
     float x, y;
 } point;
 
+typedef struct {
+    point start, end;
+} line;
+
 image make_image(int w, int h, int c);
 image make_empty_image(int w, int h, int c);
 image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes);
