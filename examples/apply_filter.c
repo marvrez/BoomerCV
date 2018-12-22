@@ -57,7 +57,7 @@ image filter_image_from_path(char* path, filter_type type)
             out = colorize_sobel(original);
             break;
         case EQUALIZE_HISTOGRAM:
-            // out = equalize_histogram(original); //TODO: implement
+            out = equalize_histogram(original);
             break;
         case THIN:
             // out = hilditch_thin_image(original); //TODO: implement

@@ -84,6 +84,49 @@ inline image make_1d_gaussian(float sigma)
     }
     return f;
 }
+
+image equalize_histogram(image m)
+{
+    #define MAX_INTENSITY 256
+    #define FINAL_LEVEL 64 // final intensity level
+    image out;
+    int intensity = 0;
+    int target = (int)((float)(m.w*m.h) / FINAL_LEVEL); // target occurrences after transform
+    int hist[MAX_INTENSITY] = {0}, hist2[MAX_INTENSITY] = {0};
+    float transform_table[MAX_INTENSITY] = {0.f}; // Table of intensity level transforms
+    float step = (float)MAX_INTENSITY / (255.f*FINAL_LEVEL); // divide by 255 to normalize
+
+    if(m.c == 3) {
+        rgb_to_ycbcr(&m);
+        out = copy_image(m);
+    }
+    else out = make_image(m.w, m.h, m.c);
+
+    // Generate histogram
+    for(int i = 0; i < m.w*m.h; ++i) {
+        ++hist[(unsigned char)(255*m.data[i])];
+    }
+    // Generation of transform table
+    for(int i = 0; i < MAX_INTENSITY; ++i) {
+        if (abs(target - hist2[intensity]) < abs(target - (hist2[intensity] + hist[i]))) {
+            intensity = (intensity + 1 >= FINAL_LEVEL) ? FINAL_LEVEL - 1 : intensity + 1;
+        }
+        transform_table[i] = intensity*step;
+        hist2[intensity] += hist[i];
+    }
+    for(int i = 0; i < m.w*m.h; ++i) {
+        out.data[i] = transform_table[(unsigned char)(255*m.data[i])];
+    }
+    normalize_image(&out);
+    if(m.c == 3) {
+        ycbcr_to_rgb(&out);
+        clamp_image(&out);
+        ycbcr_to_rgb(&m);
+    }
+    #undef MAX_INTENSITY
+    #undef FINAL_LEVEL
+    return out;
+}
 image colorize_sobel(image m)
 {
     image* s = sobel_image(m);
