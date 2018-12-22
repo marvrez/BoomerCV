@@ -88,13 +88,9 @@ inline image make_1d_gaussian(float sigma)
 image equalize_histogram(image m)
 {
     #define MAX_INTENSITY 256
-    #define FINAL_LEVEL 64 // final intensity level
     image out;
-    int intensity = 0;
-    int target = (int)((float)(m.w*m.h) / FINAL_LEVEL); // target occurrences after transform
-    int hist[MAX_INTENSITY] = {0}, hist2[MAX_INTENSITY] = {0};
-    float transform_table[MAX_INTENSITY] = {0.f}; // Table of intensity level transforms
-    float step = (float)MAX_INTENSITY / (255.f*FINAL_LEVEL); // divide by 255 to normalize
+    int n = m.w*m.h, count = 0, hist[MAX_INTENSITY] = {0};
+    float transform_table[MAX_INTENSITY] = {0.f}, cdf[MAX_INTENSITY] = {0.f};
 
     if(m.c == 3) {
         rgb_to_ycbcr(&m);
@@ -103,18 +99,16 @@ image equalize_histogram(image m)
     else out = make_image(m.w, m.h, m.c);
 
     // Generate histogram
-    for(int i = 0; i < m.w*m.h; ++i) {
+    for(int i = 0; i < n; ++i) {
         ++hist[(unsigned char)(255*m.data[i])];
     }
     // Generation of transform table
     for(int i = 0; i < MAX_INTENSITY; ++i) {
-        if (abs(target - hist2[intensity]) < abs(target - (hist2[intensity] + hist[i]))) {
-            intensity = (intensity + 1 >= FINAL_LEVEL) ? FINAL_LEVEL - 1 : intensity + 1;
-        }
-        transform_table[i] = intensity*step;
-        hist2[intensity] += hist[i];
+        count += hist[i];
+        cdf[i] = 1.f*count/n;
+        transform_table[i] = roundf(cdf[i]*(MAX_INTENSITY-1))/255.f;
     }
-    for(int i = 0; i < m.w*m.h; ++i) {
+    for(int i = 0; i < n; ++i) {
         out.data[i] = transform_table[(unsigned char)(255*m.data[i])];
     }
     normalize_image(&out);
@@ -124,7 +118,6 @@ image equalize_histogram(image m)
         ycbcr_to_rgb(&m);
     }
     #undef MAX_INTENSITY
-    #undef FINAL_LEVEL
     return out;
 }
 image colorize_sobel(image m)
