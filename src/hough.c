@@ -13,7 +13,7 @@ accumulator hough_transform(image m)
     accumulator a;
     //Create the accumulator
     float hough_h = sqrtf(2.f)*(m.h > m.w ? m.h : m.w) / 2.f;
-    a.w = hough_h*2, a.h = 180;
+    a.h = hough_h*2, a.w = 180;
 
     a.histogram = (unsigned int*)calloc(a.w*a.h, sizeof(unsigned int));
 
@@ -23,7 +23,7 @@ accumulator hough_transform(image m)
             if(m.data[y*m.w + x] == 1.f) {
                 for(int t = 0; t < 180; ++t) {
                     float r = ((x - center_x)*cosf(t*DEG2RAD)) + ((y - center_y)*sinf(t*DEG2RAD));
-                    ++a.histogram[(int)((roundf(r + hough_h)*180.f)) + t];
+                    ++a.histogram[(int)((round(r + hough_h)*180.f)) + t];
                 }
             }
         }
@@ -33,12 +33,12 @@ accumulator hough_transform(image m)
 
 static inline int find_local_maximum(accumulator a, int r, int t)
 {
-    int max = (int)a.histogram[(r*a.w) + t];
+    int max = (int)a.histogram[r*a.w + t];
     for (int ly = -4; ly <= 4; ++ly) {
         for (int lx = -4; lx <= 4; ++lx) {
             if ((ly + r >= 0 && ly + r < a.h) && (lx + t >= 0 && lx + t < a.w)) {
-                if ((int)a.histogram[((r + ly)*a.w) + (t + lx)] > max) {
-                    max = (int)a.histogram[((r + ly)*a.w) + (t + lx)];
+                if ((int)a.histogram[(r + ly)*a.w + (t + lx)] > max) {
+                    max = (int)a.histogram[(r + ly)*a.w + (t + lx)];
                     ly = lx = 5;
                 }
             }
@@ -60,9 +60,9 @@ line* hough_line_detect(image m, int threshold, int* num_lines)
     if(threshold < 1) threshold = m.w > m.h ? m.w / 3 : m.h / 3;
     for (int r = 0; r < a.h; ++r) {
         for (int t = 0; t < a.w; ++t) {
-            if((int)a.histogram[(r*a.w) + t] < threshold) continue;
+            if((int)a.histogram[r*a.w + t] < threshold) continue;
             int max = find_local_maximum(a, r, t);
-            if(max > a.histogram[(r*a.w) + t]) continue;
+            if(max > (int)a.histogram[r*a.w + t]) continue;
 
             int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
             if (t >= 45 && t <= 135) {
@@ -75,7 +75,7 @@ line* hough_line_detect(image m, int threshold, int* num_lines)
             else {
                 // x = (r - y sin(t)) / cos(t)
                 y1 = 0;
-                x1 = ((float)(r - (a.h/2.f)) - ((y1 - (m.h/2.f))*sinf(t*DEG2RAD)))/cos(t*DEG2RAD) + (m.w/2.f);
+                x1 = ((float)(r - (a.h/2.f)) - ((y1 - (m.h/2.f))*sinf(t*DEG2RAD)))/cosf(t*DEG2RAD) + (m.w/2.f);
                 y2 = m.h - 0;
                 x2 = ((float)(r - (a.h/2.f)) - ((y2 - (m.h/2.f))*sinf(t*DEG2RAD)))/cosf(t*DEG2RAD) + (m.w/2.f);
             }

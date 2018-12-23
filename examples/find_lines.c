@@ -1,6 +1,7 @@
 #include "image.h"
 #include "hough.h"
 #include "filter.h"
+#include "draw.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -15,8 +16,8 @@ image find_lines_from_path(char* path, int threshold)
     double t1 = time_now();
     image* s = sobel_image(original); // TODO: swap with canny edge detection when implemented
     lines = hough_line_detect(s[0], threshold, &num_lines);
-    draw_hough_lines(&original, lines, num_lines, 1.f, 1.f, 0.2f);
-    printf("%d\n", num_lines);
+    printf("found %d lines\n", num_lines);
+    draw_hough_lines(&original, lines, num_lines, 255, 255, 50);
     double t2 = time_now();
     printf("line detection took %.3lf seconds\n", t2-t1);
 
