@@ -18,11 +18,13 @@ accumulator hough_transform(image m)
     a.histogram = (unsigned int*)calloc(a.w*a.h, sizeof(unsigned int));
 
     float center_x = m.w/2.f, center_y = m.h/2.f;
+    #pragma omp parallel for schedule(dynamic)
     for(int y = 0; y < m.h; ++y) {
         for(int x = 0; x < m.w; ++x) {
             if(m.data[y*m.w + x] == 1.f) {
                 for(int t = 0; t < 180; ++t) {
                     float r = ((x - center_x)*cosf(t*DEG2RAD)) + ((y - center_y)*sinf(t*DEG2RAD));
+                    #pragma omp atomic update
                     ++a.histogram[(int)((round(r + hough_h)*180.f)) + t];
                 }
             }
@@ -91,6 +93,7 @@ line* hough_line_detect(image m, int threshold, int* num_lines)
 
 void draw_hough_lines(image* m, line* lines, int num_lines, float r, float g, float b)
 {
+    #pragma omp parallel for
     for(int i = 0; i < num_lines; ++i) {
         line l = lines[i];
         draw_line(m, l.start.x, l.start.y, l.end.x, l.end.y, r, g, b);

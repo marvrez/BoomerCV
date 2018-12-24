@@ -12,6 +12,7 @@ void draw_box(image* m, int x1, int y1, int x2, int y2, float r, float g, float 
     if(y1 < 0) { y1 = 0; } if(y1 >= m->h) { y1 = m->h - 1; }
     if(y2 < 0) { y2 = 0; } if(y2 >= m->h) { y2 = m->h - 1; }
 
+    #pragma omp parallel for
     for (int i = x1; i <= x2; ++i) {
         m->data[i + y1*m->w + 0*m->w*m->h] = r;
         m->data[i + y2*m->w + 0*m->w*m->h] = r;
@@ -22,6 +23,7 @@ void draw_box(image* m, int x1, int y1, int x2, int y2, float r, float g, float 
         m->data[i + y1*m->w + 2*m->w*m->h] = b;
         m->data[i + y2*m->w + 2*m->w*m->h] = b;
     }
+    #pragma omp parallel for
     for (int i = y1; i <= y2; ++i) {
         m->data[x1 + i*m->w + 0*m->w*m->h] = r;
         m->data[x2 + i*m->w + 0*m->w*m->h] = r;
@@ -91,6 +93,7 @@ void draw_line(image* m, int x1, int y1, int x2, int y2, float r, float g, float
 
 void draw_grid(image* m, float x_min, float y_min, float x_max, float y_max, int steps, float r, float g, float b)
 {
+    #pragma omp parallel for
     for (int i = 0; i <= steps; ++i) {
         draw_line(m, x_min, y_min + (y_max-y_min)*i/steps,
                      x_max, y_min + (y_max-y_min)*i/steps,
@@ -109,6 +112,7 @@ void draw_bbox(image* m, box bbox, float r, float g, float b)
 
 void draw_bbox_width(image* m, box bbox, int width, float r, float g, float b)
 {
+    #pragma omp parallel for
     for (int i = 0; i < width; ++i) {
         draw_box(m, bbox.x + i, bbox.y + i, (bbox.x + bbox.w) - i, (bbox.y + bbox.h) - i, r, g, b);
     }
@@ -116,6 +120,7 @@ void draw_bbox_width(image* m, box bbox, int width, float r, float g, float b)
 
 void draw_grid_width(image* m, float x_min, float y_min, float x_max, float y_max, int steps, int width, float r, float g, float b)
 {
+    #pragma omp parallel for
     for(int w = 0; w <= width; ++w) {
         for (int i = 0; i <= steps; ++i) {
             int sign = i != steps ? 1 : -1;
@@ -132,7 +137,7 @@ void draw_grid_width(image* m, float x_min, float y_min, float x_max, float y_ma
 
 void draw_circle_thickness(image* m, int x0, int y0, int radius, int width, float r, float g, float b)
 {
-
+    #pragma omp parallel for
     for (int i = 0; i < width; ++i) {
         draw_circle(m, x0, y0, radius - i, r, g, b);
     }

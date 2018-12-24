@@ -13,6 +13,7 @@ image convolve_image(image m, image filter, int preserve)
     image out = make_image(m.w, m.h, preserve ? m.c : 1);
     for(k = 0; k < m.c; ++k) {
         int filter_channel = single_channel ? 0 : k, out_channel = preserve ? k : 0;
+        #pragma omp parallel for
         for(i = 0; i < m.h; ++i) {
             for(j = 0; j < m.w; ++j) {
                 float sum = 0.f;
@@ -99,6 +100,7 @@ image equalize_histogram(image m)
     else out = make_image(m.w, m.h, m.c);
 
     // Generate histogram
+    #pragma omp parallel for reduction(+:hist)
     for(int i = 0; i < n; ++i) {
         ++hist[(unsigned char)(255*m.data[i])];
     }
@@ -108,6 +110,7 @@ image equalize_histogram(image m)
         cdf[i] = 1.f*count/n;
         transform_table[i] = floorf(cdf[i]*(MAX_INTENSITY-1))/255.f;
     }
+    #pragma omp parallel for
     for(int i = 0; i < n; ++i) {
         out.data[i] = transform_table[(unsigned char)(255*m.data[i])];
     }
@@ -141,6 +144,7 @@ image* sobel_image(image m)
     out[0] = G, out[1] = theta;
     image gx_filter = make_gx_filter(), gy_filter = make_gy_filter();
     image Gx = convolve_image(m, gx_filter, 0), Gy = convolve_image(m, gy_filter, 0);
+    #pragma omp parallel for
     for(int i = 0; i < m.w*m.h; ++i) {
         G.data[i] = sqrtf(Gx.data[i]*Gx.data[i] + Gy.data[i]*Gy.data[i]);
         theta.data[i] = atan2(Gy.data[i], Gx.data[i]);
@@ -187,6 +191,7 @@ image dilate_image(image m, int times)
     image out = make_image(m.w, m.h, m.c);
     image tmp = copy_image(m);
     while(times--) {
+        #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
                 int x2, y2, x3, y3;
@@ -216,6 +221,7 @@ image erode_image(image m, int times)
     image out = make_image(m.w, m.h, m.c);
     image tmp = copy_image(m);
     while(times--) {
+        #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
                 int x2, y2, x3, y3;
@@ -331,10 +337,9 @@ image skeletonize_image(image m)
         } // end of y
 
         if(counter != 0) {
-            for(int y = 0; y < m.h; ++y) {
-                for(int x = 0; x < m.w; ++x) {
-                    if(out.data[y*m.w + x] == 2) out.data[y*m.w + x] = 1;
-                }
+            #pragma omp parallel for
+            for(i = 0; i < m.w*m.h; ++i) {
+                if(out.data[i] == 2) out.data[i] = 1;
             }
         }
     } while(counter != 0);

@@ -33,6 +33,7 @@ image make_image_from_hwc_bytes(int w, int h, int c, unsigned char* bytes)
 {
     image out = make_image(w, h, c);
     for(int k = 0; k < c; ++k) {
+        #pragma omp parallel for
         for(int i = 0; i < h; ++i) {
             for(int j = 0; j < w; ++j) {
                 out.data[j + w*(i + h*k)] = (float)bytes[k + c*(j + w*i)] / 255.f;
@@ -122,9 +123,10 @@ int save_image_jpg(image m, const char* filename, int quality)
 image get_channel(image m, int c)
 {
     image out = make_image(m.w, m.h, 1);
-    if (out.data && c >= 0 && c < m.c) {
-	int start = c*m.w*m.h;
-        for (int i = 0; i < m.h*m.w; ++i) {
+    if(out.data && c >= 0 && c < m.c) {
+        int start = c*m.w*m.h;
+        #pragma omp parallel for
+        for(int i = 0; i < m.h*m.w; ++i) {
             out.data[i] = m.data[start + i];
         }
     }
@@ -137,9 +139,10 @@ image rgb_to_grayscale(image m)
 
     image gray = make_image(m.w, m.h, 1);
     const float scale[] = { 0.299, 0.587, 0.114 };
-    for (int k = 0; k < m.c; ++k) {
+    for(int k = 0; k < m.c; ++k) {
         int start = k*m.w*m.h;
-        for (int i = 0; i < m.h*m.w; ++i) {
+        #pragma omp parallel for
+        for(int i = 0; i < m.h*m.w; ++i) {
             gray.data[i] += scale[k] * m.data[start + i];
         }
     }
@@ -150,6 +153,7 @@ void rgb_to_grayscale_inplace(image* m)
 {
     if(m->c != 3) return;
     const float scale[] = {0.299, 0.587, 0.114};
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             float grayscale_val = 0;
@@ -170,6 +174,7 @@ image grayscale_to_rgb(image m, float r, float g, float b)
 
     const float scale[] = {r, g, b};
     for(int k = 0; k < 3; ++k) {
+        #pragma omp parallel for
         for(int i = 0; i < m.h; ++i) {
             for(int j = 0; j < m.w; ++j) {
                 rgb.data[j + m.w*(i + m.h*k)] += scale[k]*m.data[j + m.w*i];
@@ -185,6 +190,7 @@ void rgb_to_hsv(image* m)
 
     float r, g, b;
     float h, s, v;
+    #pragma omp parallel for
     for (int i = 0; i < m->h; ++i) {
         for (int j = 0; j < m->w; ++j) {
             r = get_pixel(*m, j, i, 0),
@@ -219,6 +225,7 @@ void hsv_to_rgb(image* m)
     float r, g, b;
     float h, s, v;
     float f, p, q, t;
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             h = 6*get_pixel(*m, j, i, 0);
@@ -264,6 +271,7 @@ void hsv_to_rgb(image* m)
 void rgb_to_bgr(image* m)
 {
     if (m->c != 3 || !m->data) return;
+    #pragma omp parallel for
     for (int i = 0; i < m->w*m->h; ++i) {
         float swap = m->data[i];
         m->data[i] = m->data[i + m->w*m->h * 2];
@@ -281,6 +289,7 @@ void yuv_to_rgb(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, u, v;
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             y = get_pixel(*m, j, i, 0);
@@ -303,6 +312,7 @@ void rgb_to_yuv(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, u, v;
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             r = get_pixel(*m, j, i, 0);
@@ -325,6 +335,7 @@ void ycbcr_to_rgb(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, cb, cr;
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             y = get_pixel(*m, j, i, 0);
@@ -347,6 +358,7 @@ void rgb_to_ycbcr(image* m)
     if(m->c != 3) return;
     float r, g, b;
     float y, cb, cr;
+    #pragma omp parallel for
     for(int i = 0; i < m->h; ++i) {
         for(int j = 0; j < m->w; ++j) {
             r = get_pixel(*m, j, i, 0);
@@ -366,6 +378,7 @@ void rgb_to_ycbcr(image* m)
 
 void fill_image(image* m, float s)
 {
+    #pragma omp simd
     for(int i = 0; i < m->h*m->w*m->c; ++i) {
         m->data[i] = s;
     }
@@ -373,6 +386,7 @@ void fill_image(image* m, float s)
 
 void clamp_image(image* m)
 {
+    #pragma omp parallel for
     for(int i = 0; i < m->w*m->h*m->c; ++i) {
         if(m->data[i] < 0.f) m->data[i] = 0.f;
         if(m->data[i] > 1.f) m->data[i] = 1.f;
@@ -381,6 +395,7 @@ void clamp_image(image* m)
 
 void translate_image(image* m, float s)
 {
+    #pragma omp simd
     for(int i = 0; i < m->h*m->w*m->c; ++i) {
         m->data[i] += s;
     }
@@ -388,6 +403,7 @@ void translate_image(image* m, float s)
 
 void scale_image(image* m, float s)
 {
+    #pragma omp simd
     for(int i = 0; i < m->h*m->w*m->c; ++i) {
         m->data[i] *= s;
     }
@@ -396,6 +412,7 @@ void scale_image(image* m, float s)
 void normalize_image(image* m)
 {
     float min = FLT_MAX, max = -FLT_MAX;
+    #pragma omp parallel for reduction(min:min) reduction(max:max)
     for(int i = 0; i < m->w*m->h*m->c; ++i) {
         float val = m->data[i];
         if(val < min) min = val;
@@ -407,6 +424,7 @@ void normalize_image(image* m)
         max = 1;
     }
 
+    #pragma omp parallel for
     for(int i = 0; i < m->w*m->h*m->c; ++i) {
         m->data[i] = (m->data[i] - min) / (max - min);
     }
@@ -435,6 +453,7 @@ void transpose_image(image* m)
 void flip_image(image* m)
 {
     for(int k = 0; k < m->c; ++k) {
+        #pragma omp parallel for
         for(int i = 0; i < m->h; ++i) {
             for(int j = 0; j < m->w; ++j) {
                 int idx = j + m->w*(i + m->h*k);
@@ -471,6 +490,7 @@ image nn_resize(image m, int w, int h)
     image out = make_image(w, h, m.c);
     float w_scale = (float)m.w / w, h_scale = (float)m.h / h;
     for(int k = 0; k < m.c; ++k) {
+        #pragma omp parallel for
         for(int i = 0; i < h; ++i) {
             for(int j = 0; j < w; ++j) {
                 float y = (i + 0.5f)*h_scale - 0.5f;
@@ -489,6 +509,7 @@ image bilinear_resize(image m, int w, int h)
     image out = make_image(w, h, m.c);
     float w_scale = (float)m.w / w, h_scale = (float)m.h / h;
     for(int k = 0; k < m.c; ++k) {
+        #pragma omp parallel for
         for(int i = 0; i < h; ++i) {
             for(int j = 0; j < w; ++j) {
                 float y = (i + 0.5f)*h_scale - 0.5f;
@@ -507,6 +528,7 @@ image rotate_image(image m, float rad)
     int cx = m.w / 2, cy = m.h / 2;
     image rotated_image = make_image(m.w, m.h, m.c);
     for(int c = 0; c < m.c; ++c) {
+        #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
                 int rx = cosf(rad)*(x - cx) - sinf(rad)*(y - cy) + cx;
@@ -524,6 +546,7 @@ image crop_image(image m, int dx, int dy, int w, int h)
 {
     image cropped_image = make_image(w, h, m.c);
     for (int k = 0; k < m.c; ++k) {
+        #pragma omp parallel for
         for (int i = 0; i < h; ++i) {
             for (int j = 0; j < w; ++j) {
                 int r = i + dy, c = j + dx;
@@ -540,10 +563,10 @@ image crop_image(image m, int dx, int dy, int w, int h)
     return cropped_image;
 }
 
-
 image threshold_image(image m, float thresh)
 {
     image out = make_image(m.w, m.h, m.c);
+    #pragma omp parallel for
     for (int i = 0; i < m.w*m.h*m.c; ++i) {
         out.data[i] = (m.data[i] > thresh) ? 1.f : 0.f;
     }
@@ -562,12 +585,15 @@ image otsu_binarize_image(image m)
     float sigma[MAX_INTENSITY] = { 0.0f }; // inter-class variance
 
     // create histogram
+    #pragma omp parallel for reduction(+:hist)
     for (i = 0; i < N*m.c; ++i) {
         ++hist[(unsigned char)(255.f * m.data[i])];
     }
     // calculate probability density from histogram
+    float normalize_factor = 1.f / N;
+    #pragma omp parallel for
     for (i = 0; i < MAX_INTENSITY; ++i) {
-        prob[i] = (float)hist[i] / N;
+        prob[i] = (float)hist[i]*normalize_factor;
     }
 
     w[0] = prob[0];
@@ -590,6 +616,7 @@ image otsu_binarize_image(image m)
     threshold /= 255.f;
 
     // binarize based on newly found threshold
+    #pragma omp parallel for
     for (i = 0; i < N*m.c; ++i) {
         out.data[i] = m.data[i] > threshold ? 1.0f : 0.0f;
     }
@@ -600,6 +627,7 @@ image otsu_binarize_image(image m)
 image binarize_image(image m, int reverse)
 {
     image out = copy_image(m);
+    #pragma omp parallel for
     for (int i = 0; i < m.w*m.h*m.c; ++i) {
         if (out.data[i] > 0.5f) out.data[i] = reverse ? 1.f : 0.f;
         else out.data[i] = reverse ? 0.f : 1.f;
@@ -614,9 +642,10 @@ unsigned char* get_image_data_hwc(image m)
         data = calloc(m.w*m.h*m.c, sizeof(unsigned char));
         if (data) {
             for (int k = 0; k < m.c; ++k) {
-		int start = k*m.w*m.h;
+                int start = k*m.w*m.h;
+                #pragma omp parallel for
                 for (int i = 0; i < m.w*m.h; ++i) {
-                    data[i*m.c + k] = (unsigned char)(255 * m.data[start + i]);
+                    data[i*m.c + k] = (unsigned char)(255*m.data[start + i]);
                 }
             }
         }
