@@ -7,15 +7,15 @@
 #define TAN22 0.4142135623730950488016887242097f
 #define TAN67 2.4142135623730950488016887242097f
 
-static inline int in_range(image m, int x, int y)
-{
-    return x >= 0 && x < m.w && y >= 0 && y < m.h;
-}
+#define WEAK_THRESHOLD_PERCENTAGE 0.8f // percentage of the strong threshold value that the weak threshold shall be set at
+#define STRONG_THRESHOLD_PERCENTAGE 0.1f // minimum percentage of pixels that are considered to meet the strong threshold
+
+#define MAX_INTENSITY 256
 
 image canny_image(image m, int reduce_noise)
 {
     image out, sobel, clean;
-    int high, low, *G, *theta;
+    int weak_threshold, strong_threshold, *G, *theta;
     float sigma = 1.4f;
 
     if(!m.data || m.c == 1) return make_empty_image(0,0,0);
@@ -27,16 +27,14 @@ image canny_image(image m, int reduce_noise)
     G = malloc(m.w*m.h*sizeof(int));
     theta = malloc(m.w*m.h*sizeof(int));
 
-    if(G && theta && sobel.data && out.data) {
-        canny_sobel_image(clean, G, theta);
-        canny_nms(&sobel, G, theta);
-        canny_estimate_threshold(&sobel, &high, &low);
-        canny_hysteresis(high, low, &sobel, &out);
-    }
+    canny_sobel_image(clean, G, theta);
+    canny_nms(G, theta, &sobel);
+    canny_estimate_threshold(sobel, &weak_threshold, &strong_threshold);
+    canny_hysteresis(weak_threshold, strong_threshold, sobel, &out);
 
-    if(reduce_noise) free_image(&clean);
-    if(G) free(G);
-    if(theta) free(theta);
+    free(G);
+    free(theta);
+    free_image(&clean);
     free_image(&sobel);
     return out;
 }
@@ -46,8 +44,8 @@ void canny_sobel_image(image in, int* G, int* theta)
     float g_div;
     int w = in.w, h = in.h;
     #pragma omp parallel for
-    for (int y = w * 3; y < w*(h - 3); y += w) {
-        for (int x = 3; x < w - 3; ++x) {
+    for(int y = w * 3; y < w*(h - 3); y += w) {
+        for(int x = 3; x < w - 3; ++x) {
             int g_x = (int)(255*(2*in.data[x + y + 1]
                 + in.data[x + y - w + 1]
                 + in.data[x + y + w + 1]
@@ -85,36 +83,60 @@ void canny_sobel_image(image in, int* G, int* theta)
     }
 }
 
-void canny_nms(image* m, int* G, int* theta)
+void canny_nms(int* G, int* theta, image* out)
 {
-    int w = m->w, h = m->h;
+    int w = out->w, h = out->h;
     #pragma omp parallel for
     for(int y = 0; y < w*h; y += w) {
         for(int x = 0; x < w; ++x) {
             switch(theta[x + y]) {
                 case 0: // '|'
                     if(G[x + y] > G[x + y - w] && G[x + y] > G[x + y + w])
-                        m->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else m->data[x + y] = 0.f;
+                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
+                    else out->data[x + y] = 0.f;
                     break;
                 case 1: // '\'
                     if (G[x + y] > G[x + y - w - 1] && G[x + y] > G[x + y + w + 1])
-                        m->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else m->data[x + y] = 0.f;
+                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
+                    else out->data[x + y] = 0.f;
                     break;
                 case 2: // '-'
                     if (G[x + y] > G[x + y - 1] && G[x + y] > G[x + y + 1])
-                        m->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else m->data[x + y] = 0.f;
+                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
+                    else out->data[x + y] = 0.f;
                     break;
                 case 3: // '/'
                     if (G[x + y] > G[x + y - w + 1] && G[x + y] > G[x + y + w - 1])
-                        m->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else m->data[x + y] = 0.f;
+                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
+                    else out->data[x + y] = 0.f;
                     break;
                 default:
                     break;
             }
         }
     }
+}
+
+// - heuristic for estimating a double threshold -
+// assumes that the top x% (given by STRONG_THRESHOLD_PERCENTAGE) of edge pixels with the highest intensity are the true edges 
+// and that the weak threshold is equal to the quantity of strong_threshold plus the total number of 0s at the low end of the histogram
+void canny_estimate_threshold(image m, int* weak_threshold, int* strong_threshold)
+{
+    int i, n = m.w*m.h, strong_cutoff = 0, hist[MAX_INTENSITY] = {0};
+    #pragma omp parallel for
+    for (i = 0; i < n; ++i) ++hist[(int)m.data[i]];
+    int pixels = (n - hist[0])*STRONG_THRESHOLD_PERCENTAGE;
+
+    i = MAX_INTENSITY - 1;
+    while(strong_cutoff < pixels) strong_cutoff += hist[i--];
+    *strong_threshold = i;
+
+    i = 1;
+    while(hist[i] == 0) i++;
+    *weak_threshold = (*strong_threshold + i)*WEAK_THRESHOLD_PERCENTAGE;
+}
+
+static inline int canny_in_range(image m, int x, int y)
+{
+    return x >= 0 && x < m.w && y >= 0 && y < m.h;
 }
