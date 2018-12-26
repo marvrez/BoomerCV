@@ -8,7 +8,7 @@
 #define TAN67 2.4142135623730950488016887242097f
 
 #define WEAK_THRESHOLD_PERCENTAGE 0.8f // percentage of the strong threshold value that the weak threshold shall be set at
-#define STRONG_THRESHOLD_PERCENTAGE 0.1f // minimum percentage of pixels that are considered to meet the strong threshold
+#define STRONG_THRESHOLD_PERCENTAGE 0.12f // minimum percentage of pixels that are considered to meet the strong threshold
 
 #define MAX_INTENSITY 256
 
@@ -41,7 +41,6 @@ image canny_image(image m, int reduce_noise)
 
 void canny_sobel_image(image in, int* G, int* theta)
 {
-    float g_div;
     int w = in.w, h = in.h;
     #pragma omp parallel for
     for(int y = w * 3; y < w*(h - 3); y += w) {
@@ -63,7 +62,7 @@ void canny_sobel_image(image in, int* G, int* theta)
             // '|' = 0, '\' = 1, '-' = 2, '/' = 3
             if (g_x == 0) theta[x + y] = 2;
             else {
-                g_div = g_y / (float)g_x;
+                float g_div = g_y / (float)g_x;
                 if (g_div < 0) {
                     if (g_div < -TAN67) theta[x + y] = 0;
                     else {
@@ -123,7 +122,7 @@ void canny_nms(int* G, int* theta, image* out)
 void canny_estimate_threshold(image m, int* weak_threshold, int* strong_threshold)
 {
     int i, n = m.w*m.h, strong_cutoff = 0, hist[MAX_INTENSITY] = {0};
-    #pragma omp parallel for
+    #pragma omp parallel for reduction(+:hist)
     for (i = 0; i < n; ++i) ++hist[(int)m.data[i]];
     int pixels = (n - hist[0])*STRONG_THRESHOLD_PERCENTAGE;
 
@@ -139,4 +138,37 @@ void canny_estimate_threshold(image m, int* weak_threshold, int* strong_threshol
 static inline int canny_in_range(image m, int x, int y)
 {
     return x >= 0 && x < m.w && y >= 0 && y < m.h;
+}
+
+static inline int canny_trace(int x, int y, int weak_threshold, image in, image* out)
+{
+    if (out->data[y*out->w + x] != 0) return 0; // base case
+    out->data[y*out->w + x] = 1.f;
+    for(int dy = -1; dy <= 1; ++dy) {
+        for(int dx = -1; dx <= 1; ++dx) {
+            if(!(y == 0 && dx == 0) && canny_in_range(in, x + dx, y + dy) &&
+            (int)(in.data[(y + dy)*out->w + x + dx]) >= weak_threshold) {
+                if(canny_trace(x + dx, y + dy, weak_threshold, in, out)) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 1;
+}
+
+void canny_hysteresis(int weak_threshold, int strong_threshold, image in, image* out)
+{
+    #pragma omp parallel for
+    for (int i = 0; i < in.w*in.h; ++i) {
+        out->data[i] = 0.f;
+    }
+    #pragma omp parallel for
+    for (int y = 0; y < out->h; ++y) {
+        for (int x = 0; x < out->w; ++x) {
+            if ((int)(in.data[y*out->w + x]) >= strong_threshold) {
+                canny_trace(x, y, weak_threshold, in, out);
+            }
+        }
+    }
 }

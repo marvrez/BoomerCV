@@ -1,4 +1,5 @@
 #include "image.h"
+#include "canny.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -6,12 +7,14 @@
 typedef enum {
     OTSU,
     BINARY,
+    CANNY,
 } binarize_type;
 
 binarize_type get_binarize_type(char* type_str)
 {
     if(strcmp(type_str, "otsu") == 0) return OTSU;
     if(strcmp(type_str, "binary") == 0) return BINARY;
+    if(strcmp(type_str, "canny") == 0) return CANNY;
     return BINARY;
 }
 
@@ -19,7 +22,6 @@ image binarize_from_path(char* path, binarize_type type)
 {
     image original = load_image_rgb(path);
     image gray = rgb_to_grayscale(original);
-    free_image(&original);
 
     image binarized = make_empty_image(gray.w, gray.h, gray.c);
     double t1 = time_now();
@@ -27,15 +29,19 @@ image binarize_from_path(char* path, binarize_type type)
         case OTSU:
             binarized = otsu_binarize_image(gray);
             break;
+        case CANNY:
+            binarized = canny_image(original, 1);
+            break;
         case BINARY:
         default:
-            binarized = binarize_image(gray, 0);
+            binarized = threshold_image(gray, 0.5f);
             break;
     }
     double t2 = time_now();
     printf("binarizing took %.3lf seconds\n", t2-t1);
 
     free_image(&gray);
+    free_image(&original);
     return binarized;
 }
 
