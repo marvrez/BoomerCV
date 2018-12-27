@@ -30,5 +30,6 @@ Where `<function>` is currently one of
 * `binarize` - binarize a given input image
 * `filter` - apply a chosen filter on a given image
 * `lines` - find lines in a given image
+* `blobs` - run blob detection on a given image
 
 More instructions will be shown about these functions if you run them without any additional parameters.

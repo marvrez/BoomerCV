@@ -626,10 +626,10 @@ image otsu_binarize_image(image m)
 
 image binarize_image(image m, int reverse)
 {
-    image out = copy_image(m);
+    image out = make_image(m.w, m.h, m.c);
     #pragma omp parallel for
     for (int i = 0; i < m.w*m.h*m.c; ++i) {
-        if (out.data[i] > 0.5f) out.data[i] = reverse ? 1.f : 0.f;
+        if (m.data[i] > 0.5f) out.data[i] = reverse ? 1.f : 0.f;
         else out.data[i] = reverse ? 0.f : 1.f;
     }
     return out;

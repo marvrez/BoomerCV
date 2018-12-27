@@ -86,37 +86,35 @@ void canny_nms(int* G, int* theta, image* out)
 {
     int w = out->w, h = out->h;
     #pragma omp parallel for
-    for(int y = 0; y < w*h; y += w) {
-        for(int x = 0; x < w; ++x) {
-            switch(theta[x + y]) {
-                case 0: // '|'
-                    if(G[x + y] > G[x + y - w] && G[x + y] > G[x + y + w])
-                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else out->data[x + y] = 0.f;
-                    break;
-                case 1: // '\'
-                    if (G[x + y] > G[x + y - w - 1] && G[x + y] > G[x + y + w + 1])
-                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else out->data[x + y] = 0.f;
-                    break;
-                case 2: // '-'
-                    if (G[x + y] > G[x + y - 1] && G[x + y] > G[x + y + 1])
-                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else out->data[x + y] = 0.f;
-                    break;
-                case 3: // '/'
-                    if (G[x + y] > G[x + y - w + 1] && G[x + y] > G[x + y + w - 1])
-                        out->data[x+y] = G[x+y] > 255 ?  255.f : G[x+y];
-                    else out->data[x + y] = 0.f;
-                    break;
-                default:
-                    break;
-            }
+    for(int i = 0; i < w*h; ++i) {
+        switch(theta[i]) {
+            case 0: // '|'
+                if(G[i] > G[i - w] && G[i] > G[i + w])
+                    out->data[i] = G[i] > 255 ?  255.f : G[i];
+                else out->data[i] = 0.f;
+                break;
+            case 1: // '\'
+                if (G[i] > G[i - w - 1] && G[i] > G[i + w + 1])
+                    out->data[i] = G[i] > 255 ?  255.f : G[i];
+                else out->data[i] = 0.f;
+                break;
+            case 2: // '-'
+                if (G[i] > G[i - 1] && G[i] > G[i + 1])
+                    out->data[i] = G[i] > 255 ?  255.f : G[i];
+                else out->data[i] = 0.f;
+                break;
+            case 3: // '/'
+                if (G[i] > G[i - w + 1] && G[i] > G[i + w - 1])
+                    out->data[i] = G[i] > 255 ?  255.f : G[i];
+                else out->data[i] = 0.f;
+                break;
+            default:
+                break;
         }
     }
 }
 
-// - heuristic for estimating a double threshold -
+// heuristic for estimating a double threshold - based on otsu's binarization algorithm
 // assumes that the top x% (given by STRONG_THRESHOLD_PERCENTAGE) of edge pixels with the highest intensity are the true edges 
 // and that the weak threshold is equal to the quantity of strong_threshold plus the total number of 0s at the low end of the histogram
 void canny_estimate_threshold(image m, int* weak_threshold, int* strong_threshold)
@@ -135,22 +133,16 @@ void canny_estimate_threshold(image m, int* weak_threshold, int* strong_threshol
     *weak_threshold = (*strong_threshold + i)*WEAK_THRESHOLD_PERCENTAGE;
 }
 
-static inline int canny_in_range(image m, int x, int y)
+static inline int canny_trace_dfs(int idx, int weak_threshold, image in, image* out)
 {
-    return x >= 0 && x < m.w && y >= 0 && y < m.h;
-}
-
-static inline int canny_trace(int x, int y, int weak_threshold, image in, image* out)
-{
-    if (out->data[y*out->w + x] != 0) return 0; // base case
-    out->data[y*out->w + x] = 1.f;
-    for(int dy = -1; dy <= 1; ++dy) {
-        for(int dx = -1; dx <= 1; ++dx) {
-            if(!(y == 0 && dx == 0) && canny_in_range(in, x + dx, y + dy) &&
-            (int)(in.data[(y + dy)*out->w + x + dx]) >= weak_threshold) {
-                if(canny_trace(x + dx, y + dy, weak_threshold, in, out)) {
-                    return 1;
-                }
+    if(out->data[idx] != 0.f) return 0; // base case
+    out->data[idx] = 1.f;
+    int neighbors[] = { idx+in.w, idx-in.w, idx+1, idx-1, idx+1+in.w, idx-1+in.w, idx+1-in.w, idx-1-in.w };
+    for(int i = 0; i < 8; ++i) {
+        int q = neighbors[i];
+        if(in.data[q] >= weak_threshold) {
+            if(canny_trace_dfs(q, weak_threshold, in, out)) {
+                return 1;
             }
         }
     }
@@ -160,15 +152,9 @@ static inline int canny_trace(int x, int y, int weak_threshold, image in, image*
 void canny_hysteresis(int weak_threshold, int strong_threshold, image in, image* out)
 {
     #pragma omp parallel for
-    for (int i = 0; i < in.w*in.h; ++i) {
-        out->data[i] = 0.f;
-    }
-    #pragma omp parallel for
-    for (int y = 0; y < out->h; ++y) {
-        for (int x = 0; x < out->w; ++x) {
-            if ((int)(in.data[y*out->w + x]) >= strong_threshold) {
-                canny_trace(x, y, weak_threshold, in, out);
-            }
+    for (int i = 0; i < out->w*out->h; ++i) {
+        if(in.data[i] >= strong_threshold) {
+            canny_trace_dfs(i, weak_threshold, in, out);
         }
     }
 }
