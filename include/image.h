@@ -26,7 +26,7 @@ typedef struct {
     int x, y;
     int w, h;
     float score;
-    const char name;
+    const char* name;
 } box;
 
 typedef struct {
