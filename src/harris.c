@@ -2,6 +2,8 @@
 
 #include "filter.h"
 
+#include <stdlib.h>
+
 image make_structure_matrix(image m, float sigma)
 {
     int n = m.w*m.h;
@@ -26,9 +28,9 @@ image make_structure_matrix(image m, float sigma)
     }
     image S = gaussian_noise_reduce(D, sigma);
 
-    free_image(D);
-    free_image(gx_filter); free_image(gy_filter);
-    free_image(gx); free_image(gy);
+    free_image(&D);
+    free_image(&gx_filter); free_image(&gy_filter);
+    free_image(&gx); free_image(&gy);
     return S;
 }
 
@@ -36,7 +38,7 @@ image cornerness_response(image S)
 {
     image R = make_image(S.w, S.h, 1);
     const float alpha = 0.06;
-    int n = S.w*s.h;
+    int n = S.w*S.h;
     #pragma omp parallel for
     for(int i = 0; i < n; ++i) {
         float IxIx = S.data[i], IyIy = S.data[i + n];
@@ -53,7 +55,7 @@ void draw_corners(image m, descriptor* d, int n)
 {
     #pragma omp parallel for
     for(int i = 0; i < n; ++i){
-        int x = d[i].p.x, int y = d[i].p.y;
+        int x = d[i].p.x, y = d[i].p.y;
         for(int j = -9; j <= 9; ++j){
             set_pixel(&m, x+j, y, 0, 1);
             set_pixel(&m, x, y+j, 0, 1);
