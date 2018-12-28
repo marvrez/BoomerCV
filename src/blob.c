@@ -7,7 +7,7 @@
 
 cc_label* cc_label_image(image m)
 {
-	int w = m.w, h = m.h, n = m.w*m.h;
+    int w = m.w, h = m.h, n = m.w*m.h;
     cc_label* out_labels = NULL;
 
     int* queue = (int*)malloc(n*sizeof(int));
