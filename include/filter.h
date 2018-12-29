@@ -7,6 +7,9 @@ image convolve_image(image m, image filter, int preserve);
 
 image equalize_histogram(image m);
 
+image make_gx_filter();
+image make_gy_filter();
+
 image colorize_sobel(image m);
 image* sobel_image(image m);
 image sharpen_image(image m);
