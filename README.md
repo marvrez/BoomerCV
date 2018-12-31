@@ -31,5 +31,6 @@ Where `<function>` is currently one of
 * `filter` - apply a chosen filter on a given image
 * `lines` - find lines in a given image
 * `blobs` - run blob detection on a given image
+* `corners` - run corner detection on the input image
 
 More instructions will be shown about these functions if you run them without any additional parameters.

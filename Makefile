@@ -3,7 +3,7 @@ OPENMP ?= 0
 DEBUG  ?= 0
 
 OBJ= main.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o #TODO: insert objectfiles here
-EXECOBJA= resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o #TODO:add executable examples
+EXECOBJA= resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o #TODO:add executable examples
 
 VPATH=./src/:./examples
 EXEC=boomercv

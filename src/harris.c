@@ -122,14 +122,11 @@ descriptor* harris_corner_detector(image m, float sigma, float thresh, int nms, 
     }
 
     *n = count;
-    descriptor *d = calloc(count, sizeof(descriptor));
-    int j;
-    #pragma omp parallel for
-    for(int i = 0, j = 0; i < m.h*m.w; ++i) {
+    descriptor* d = calloc(count, sizeof(descriptor));
+    int j = 0;
+    for(int i = 0; i < m.h*m.w; ++i) {
         if(R_nms.data[i] > thresh) {
-            d[j] = make_descriptor(m, i);
-            #pragma omp atomic
-            j++;
+            d[j++] = make_descriptor(m, i);
         }
     }
     assert(j == count);
