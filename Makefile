@@ -2,7 +2,7 @@ OPENCV ?= 0
 OPENMP ?= 0
 DEBUG  ?= 0
 
-OBJ= main.o image.o image_opencv.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o #TODO: insert objectfiles here
+OBJ= main.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o #TODO: insert objectfiles here
 EXECOBJA= resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o webcam.o #TODO:add executable examples
 
 VPATH=./src/:./examples
@@ -31,6 +31,7 @@ COMMON+= -DOPENCV
 CFLAGS+= -DOPENCV
 LDFLAGS+= `pkg-config --libs opencv` -lstdc++
 COMMON+= `pkg-config --cflags opencv`
+OBJ+= image_opencv.o
 endif
 
 EXECOBJS = $(addprefix $(OBJDIR), $(EXECOBJA))
@@ -45,8 +46,10 @@ $(EXEC): $(OBJS) $(EXECOBJS)
 $(OBJDIR)%.o: %.c $(DEPS)
 	$(CC) $(COMMON) $(CFLAGS) -c $< -o $@
 
+ifeq ($(OPENCV), 1)
 $(OBJDIR)%.o: %.cpp $(DEPS)
 	$(CPP) $(COMMON) $(CFLAGS) -c $< -o $@
+endif
 
 obj:
 	mkdir -p obj
