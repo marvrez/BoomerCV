@@ -74,14 +74,15 @@ image flow_smooth_image(image m, int w)
     const int offset = w / 2, n = m.w*m.h;
     const float scale_factor = 1.f / (w*w);
     for(int k = 0; k < m.c; ++k) {
+        int start_pos = k*n;
         #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
-                float val = get_pixel(integ, x-offset-1, y-offset-1, k) -
-                            get_pixel(integ, x+offset, y-offset-1, k) -
-                            get_pixel(integ, x-offset-1, y+offset, k) +
-                            get_pixel(integ, x+offset, y+offset, k);
-                S.data[x + y*m.w + k*n] = val*scale_factor;
+                float val = integ.data[start_pos + x - offset - 1 + m.w*(y - offset -1)] -
+                            integ.data[start_pos + x + offset + m.w*(y - offset - 1)] -
+                            integ.data[start_pos + x - offset - 1 + m.w*(y + offset)] +
+                            integ.data[start_pos + x + offset + m.w*(y + offset)];
+                S.data[start_pos + x + y*m.w] = val*scale_factor;
             }
         }
     }
