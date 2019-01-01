@@ -3,6 +3,10 @@
 
 #include "utils.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int c, h, w;
     float* data;
@@ -91,5 +95,15 @@ image otsu_binarize_image(image m);
 image binarize_image(image m, int reverse);
 
 unsigned char* get_image_data_hwc(image m);
+
+#ifdef OPENCV
+void* open_video_stream(const char* filename, int device_id, int w, int h, int fps);
+image get_image_from_stream(void* cap);
+int show_image(image m, const char* windowname, int ms);
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

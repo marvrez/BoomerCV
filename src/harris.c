@@ -117,7 +117,7 @@ descriptor* harris_corner_detector(image m, float sigma, float thresh, int nms, 
 
     int count = 0;
     #pragma omp parallel for reduction(+:count)
-    for(int i = 0; i < m.h*m.w; ++i){
+    for(int i = 0; i < m.h*m.w; ++i) {
         if(R_nms.data[i] > thresh) ++count;
     }
 
@@ -140,22 +140,22 @@ descriptor* harris_corner_detector(image m, float sigma, float thresh, int nms, 
 void draw_corners(image* m, descriptor* d, int n)
 {
     #pragma omp parallel for
-    for(int i = 0; i < n; ++i){
+    for(int i = 0; i < n; ++i) {
         int x = d[i].p.x, y = d[i].p.y;
-        for(int j = -9; j <= 9; ++j){
-            set_pixel(m, x+j, y, 0, 1);
-            set_pixel(m, x, y+j, 0, 1);
-            set_pixel(m, x+j, y, 1, 0);
-            set_pixel(m, x, y+j, 1, 0);
-            set_pixel(m, x+j, y, 2, 1);
-            set_pixel(m, x, y+j, 2, 1);
+        for(int j = -9; j <= 9; ++j) {
+            set_pixel(m, x+j, y, 0, 1.f);
+            set_pixel(m, x, y+j, 0, 1.f);
+            set_pixel(m, x+j, y, 1, 0.f);
+            set_pixel(m, x, y+j, 1, 0.f);
+            set_pixel(m, x+j, y, 2, 1.f);
+            set_pixel(m, x, y+j, 2, 1.f);
         }
     }
 }
 
 void free_descriptors(descriptor* d, int n)
 {
-    for(int i = 0; i < n; ++i){
+    for(int i = 0; i < n; ++i) {
         free(d[i].data);
     }
     free(d);

@@ -32,5 +32,6 @@ Where `<function>` is currently one of
 * `lines` - find lines in a given image
 * `blobs` - run blob detection on a given image
 * `corners` - run corner detection on the input image
+* `webcam` - open up a webcam viewer
 
 More instructions will be shown about these functions if you run them without any additional parameters.
