@@ -38,7 +38,7 @@ inline void transpose_1d_filter(image* filter)
     filter->h = tmp;
 }
 
-inline image make_gx_filter()
+image make_gx_filter()
 {
     image f = make_image(3,3,1);
     f.data[0] = -1; f.data[1] = 0; f.data[2] = 1;
@@ -47,7 +47,7 @@ inline image make_gx_filter()
     return f;
 }
 
-inline image make_gy_filter()
+image make_gy_filter()
 {
     image f = make_image(3,3,1);
     f.data[0] = -1; f.data[1] = -2; f.data[2] = -1;
@@ -176,12 +176,49 @@ image smoothen_image(image m, int w)
 // helper function for canny edge detection
 image gaussian_noise_reduce(image m, float sigma)
 {
+#if 0
     image gauss_1d = make_1d_gaussian(sigma);
     image out_tmp = convolve_image(m, gauss_1d, 1);
     transpose_1d_filter(&gauss_1d);
     image out = convolve_image(out_tmp, gauss_1d, 1);
     free_image(&gauss_1d); free_image(&out_tmp);
     return out;
+#else
+    // implementation based on http://blog.ivank.net/fastest-gaussian-blur.html
+    image out = make_image(m.w, m.h, m.c);
+    int w = ((int)(sqrtf(3*sigma*sigma+1))) | 1;
+    int r = (w - 1)/2;
+    float gamma = 1.f / (r+r+1);
+    #pragma omp parallel for
+    for(int k = 0; k < m.c; ++k) {
+        // blur horizontally for each row
+        const int idx = m.w*m.h*k;
+        const float* scl = m.data + idx; float* tcl = out.data + idx;
+        for(int i = 0; i < m.h; ++i) {
+            int ti = i*m.w, li = ti, ri = ti+r;
+            float fv = scl[ti], lv = scl[ti+m.w-1], val = 0;
+            #pragma omp simd reduction(+:val)
+            for(int j=0; j<r; ++j) val += scl[ti+j];
+            val += (r+1)*fv;
+            for(int j=0; j<=r; ++j) { val += scl[ri++] - fv; tcl[ti++] = val*gamma; }
+            for(int j=r+1; j<m.w-r; ++j) { val += scl[ri++] - scl[li++]; tcl[ti++] = val*gamma; }
+            for(int j=m.w-r; j<m.w; ++j) { val += lv - scl[li++]; tcl[ti++] = val*gamma; }
+        }
+        // blur vertically for each column
+        scl = out.data + idx; tcl = out.data + idx;
+        for(int i = 0; i < m.w; ++i) {
+            int ti = i, li = ti, ri = ti+r*m.w;
+            float fv = scl[ti], lv = scl[ti+m.w*(m.h-1)], val = 0;
+            #pragma omp simd reduction(+:val)
+            for(int j=0; j<r;  ++j) val += scl[ti + j*m.w];
+            val += (r+1)*fv;
+            for(int j=0; j<=r; ++j) { val += scl[ri] - fv; tcl[ti] = val*gamma; ri+=m.w; ti+=m.w; }
+            for(int j=r+1; j<m.h-r; ++j) { val += scl[ri] - scl[li];  tcl[ti] = val*gamma; li+=m.w; ri+=m.w; ti+=m.w; }
+            for(int j=m.h-r; j<m.h; ++j) { val += lv - scl[li]; tcl[ti] = val*gamma; li+=m.w; ti+=m.w; }
+        }
+    }
+    return out;
+#endif
 }
 
 image dilate_image(image m, int times)
