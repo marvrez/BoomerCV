@@ -97,6 +97,7 @@ image binarize_image(image m, int reverse);
 unsigned char* get_image_data_hwc(image m);
 
 #ifdef OPENCV
+void* open_default_cam();
 void* open_video_stream(const char* filename, int device_id, int w, int h, int fps);
 image get_image_from_stream(void* cap);
 int show_image(image m, const char* windowname, int ms);

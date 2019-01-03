@@ -33,5 +33,6 @@ Where `<function>` is currently one of
 * `blobs` - run blob detection on a given image
 * `corners` - run corner detection on the input image
 * `webcam` - open up a webcam viewer
+* `flow` - run optical flow demo with webcam
 
 More instructions will be shown about these functions if you run them without any additional parameters.

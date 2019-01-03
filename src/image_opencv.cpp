@@ -59,6 +59,11 @@ image get_image_from_stream(void* cap)
     return mat_to_image(m);
 }
 
+void* open_default_cam()
+{
+    return open_video_stream(0, 0, 0, 0, 0);
+}
+
 void* open_video_stream(const char* filename, int device_id, int w, int h, int fps)
 {
     VideoCapture* cap;

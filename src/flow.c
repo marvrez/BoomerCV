@@ -156,6 +156,26 @@ image make_time_structure_matrix(image cur, image prev, int w)
 
 image make_velocity_image(image S, int stride)
 {
+    int n = S.w*S.h;
+    image v = make_image(S.w/stride, S.h/stride, 3);
+    for(int i = (stride-1)/2; i < S.h; i += stride) {
+        for(int j = (stride-1)/2; j < S.w; j += stride) {
+            float Ixx = S.data[j + S.w*i];
+            float Iyy = S.data[j + S.w*i + n];
+            float Ixy = S.data[j + S.w*i + 2*n];
+            float Ixt = S.data[j + S.w*i + 3*n];
+            float Iyt = S.data[j + S.w*i + 4*n];
+
+            float det = Ixx*Iyy - Ixy*Ixy;
+            if(fabsf(det) < 1e-4) continue;
+            float vx = (-Ixt*Iyy + Iyt*Ixy) / det;
+            float vy = (Ixt*Ixy + -Iyt*Ixx) / det;
+
+            set_pixel(&v, j/stride, i/stride, 0, vx);
+            set_pixel(&v, j/stride, i/stride, 1, vy);
+        }
+    }
+    return v;
 }
 
 void draw_flow(image* m, image v, float scale)

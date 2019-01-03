@@ -10,6 +10,7 @@ extern void run_find_lines(int argc, char** argv);
 extern void run_blob_detect(int argc, char** argv);
 extern void run_corner_detection(int argc, char** argv);
 extern void run_webcam(int argc, char** argv);
+extern void run_flow(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
@@ -41,6 +42,9 @@ int main(int argc, char** argv)
     }
     else if (strcmp(argv[1], "webcam") == 0) {
         run_webcam(argc, argv);
+    }
+    else if (strcmp(argv[1], "flow") == 0) {
+        run_flow(argc, argv);
     }
     else {
         fprintf(stderr, "%s is not a valid option\n", argv[1]);
