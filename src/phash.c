@@ -45,7 +45,7 @@ uint64_t phash(image m)
     }
     mean /= 64.f;
 
-	uint64_t result = 0x0, bit_idx = 0x1;
+    uint64_t result = 0x0, bit_idx = 0x1;
     for(int y = 1; y <= 8; ++y) {
         for(int x = 1; x <= 8; ++x) {
             float val = resized.data[x + y*resized.w];
