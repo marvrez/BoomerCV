@@ -34,5 +34,6 @@ Where `<function>` is currently one of
 * `corners` - run corner detection on the input image
 * `webcam` - open up a webcam viewer
 * `flow` - run optical flow demo with webcam
+* `phash` - compare the phash'es of two images
 
 More instructions will be shown about these functions if you run them without any additional parameters.
