@@ -2,7 +2,7 @@ OPENCV ?= 0
 OPENMP ?= 0
 DEBUG  ?= 0
 
-OBJ= main.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o #TODO: insert objectfiles here
+OBJ= main.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o #TODO: insert objectfiles here
 EXECOBJA= resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o webcam.o flow_cam.o #TODO:add executable examples
 
 VPATH=./src/:./examples
