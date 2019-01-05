@@ -30,34 +30,34 @@ static inline int hamming_distance(uint64_t a, uint64_t b)
 
 uint64_t phash(image m)
 {
-	image gray = m.c == 1 ? copy_image(m) : rgb_to_grayscale(m);
-	image smoothened = smoothen_image(gray, 3);
+    image gray = m.c == 1 ? copy_image(m) : rgb_to_grayscale(m);
+    image smoothened = smoothen_image(gray, 3);
     image resized = bilinear_resize(smoothened, 32, 32);
 
     size_t len = resized.w*resized.h;
     dct_transform(resized.data, len);
 
     float mean = 0.f;
-	for(int y = 1; y <= 8; ++y) {
-	    for(int x = 1; x <= 8; ++x) {
-	        mean += resized.data[x + y*resized.w];
-	    }
-	}
+    for(int y = 1; y <= 8; ++y) {
+        for(int x = 1; x <= 8; ++x) {
+            mean += resized.data[x + y*resized.w];
+        }
+    }
     mean /= 64.f;
 
 	uint64_t result = 0x0, bit_idx = 0x1;
-	for(int y = 1; y <= 8; ++y) {
-	    for(int x = 1; x <= 8; ++x) {
+    for(int y = 1; y <= 8; ++y) {
+        for(int x = 1; x <= 8; ++x) {
             float val = resized.data[x + y*resized.w];
-	        if(val > mean) result |= bit_idx;
-	        bit_idx <<= 1;
-	    }
-	}
+            if(val > mean) result |= bit_idx;
+            bit_idx <<= 1;
+        }
+    }
     free_image(&gray);
     free_image(&smoothened);
     free_image(&resized);
 
-	return result;
+    return result;
 }
 
 int phash_compare(uint64_t a, uint64_t b)
@@ -89,33 +89,33 @@ int phash_compare(uint64_t a, uint64_t b)
  */
 static void forward_transform(float vector[], float temp[], size_t len) 
 {
-	if (len == 1) return;
-	size_t halfLen = len / 2;
-	for(size_t i = 0; i < halfLen; i++) {
-		float x = vector[i];
-		float y = vector[len - 1 - i];
-		temp[i] = x + y;
-		temp[i + halfLen] = (x - y) / (cos((i + 0.5) * M_PI / len) * 2);
-	}
-	forward_transform(temp, vector, halfLen);
-	forward_transform(&temp[halfLen], vector, halfLen);
-	for(size_t i = 0; i < halfLen - 1; i++) {
-		vector[i * 2 + 0] = temp[i];
-		vector[i * 2 + 1] = temp[i + halfLen] + temp[i + halfLen + 1];
-	}
-	vector[len - 2] = temp[halfLen - 1];
-	vector[len - 1] = temp[len - 1];
+    if (len == 1) return;
+    size_t halfLen = len / 2;
+    for(size_t i = 0; i < halfLen; i++) {
+        float x = vector[i];
+        float y = vector[len - 1 - i];
+        temp[i] = x + y;
+        temp[i + halfLen] = (x - y) / (cos((i + 0.5) * M_PI / len) * 2);
+    }
+    forward_transform(temp, vector, halfLen);
+    forward_transform(&temp[halfLen], vector, halfLen);
+    for(size_t i = 0; i < halfLen - 1; i++) {
+        vector[i * 2 + 0] = temp[i];
+        vector[i * 2 + 1] = temp[i + halfLen] + temp[i + halfLen + 1];
+    }
+    vector[len - 2] = temp[halfLen - 1];
+    vector[len - 1] = temp[len - 1];
 }
 
 // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
 // See: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.118.3056&rep=rep1&type=pdf#page=34
 bool dct_transform(float vector[], size_t len) 
 {
-	if (len > 0 && (len & (len - 1)) != 0) return false;  // Length is not power of 2
-	if (SIZE_MAX / sizeof(float) < len) return false;
-	float* temp = malloc(len * sizeof(float));
-	if (temp == NULL) return false;
-	forward_transform(vector, temp, len);
-	free(temp);
-	return true;
+    if (len > 0 && (len & (len - 1)) != 0) return false;  // Length is not power of 2
+    if (SIZE_MAX / sizeof(float) < len) return false;
+    float* temp = malloc(len * sizeof(float));
+    if (temp == NULL) return false;
+    forward_transform(vector, temp, len);
+    free(temp);
+    return true;
 }
