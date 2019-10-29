@@ -35,5 +35,6 @@ Where `<function>` is currently one of
 * `webcam` - open up a webcam viewer
 * `flow` - run optical flow demo with webcam
 * `phash` - compare the phash'es of two images
+* `rotate` - rotate an image with a specified angle
 
 More instructions will be shown about these functions if you run them without any additional parameters.
