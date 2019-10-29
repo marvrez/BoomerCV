@@ -526,13 +526,14 @@ image bilinear_resize(image m, int w, int h)
 image rotate_image(image m, float rad)
 {
     int cx = m.w / 2, cy = m.h / 2;
+    float cos_val = cosf(rad), sin_val = sinf(rad);
     image rotated_image = make_image(m.w, m.h, m.c);
     for(int c = 0; c < m.c; ++c) {
         #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
-                int rx = cosf(rad)*(x - cx) - sinf(rad)*(y - cy) + cx;
-                int ry = sinf(rad)*(x - cx) + cosf(rad)*(y - cy) + cy;
+                int rx = cos_val*(x - cx) - sin_val*(y - cy) + cx;
+                int ry = sin_val*(x - cx) + cos_val*(y - cy) + cy;
                 float val = bilinear_interpolate(m, rx, ry, c);
 
                 set_pixel(&rotated_image, x, y, c, val);
