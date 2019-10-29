@@ -1,9 +1,9 @@
 OPENCV ?= 0
-OPENMP ?= 0
+OPENMP ?= 1
 DEBUG  ?= 0
 
-OBJ= main.o phash.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o #TODO: insert objectfiles here
-EXECOBJA= compare_images.o resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o webcam.o flow_cam.o #TODO:add executable examples
+OBJ= main.o phash.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o # insert objectfiles here
+EXECOBJA= rotate.o compare_images.o resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o webcam.o flow_cam.o # add executables here
 
 VPATH=./src/:./examples
 EXEC=boomercv
