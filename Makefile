@@ -1,5 +1,5 @@
 OPENCV ?= 0
-OPENMP ?= 1
+OPENMP ?= 0
 DEBUG  ?= 0
 
 OBJ= main.o phash.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o # insert objectfiles here
