@@ -532,11 +532,29 @@ image rotate_image(image m, float rad)
         #pragma omp parallel for
         for(int y = 0; y < m.h; ++y) {
             for(int x = 0; x < m.w; ++x) {
-                int rx = cos_val*(x - cx) - sin_val*(y - cy) + cx;
-                int ry = sin_val*(x - cx) + cos_val*(y - cy) + cy;
+                int rx = cos_val*(x - cx) + sin_val*(y - cy) + cx;
+                int ry = -sin_val*(x - cx) + cos_val*(y - cy) + cy;
                 float val = bilinear_interpolate(m, rx, ry, c);
 
                 set_pixel(&rotated_image, x, y, c, val);
+            }
+        }
+    }
+    return rotated_image;
+}
+
+image rotate_image_left_or_right(image m, int direction)
+{
+    int cx = m.w / 2, cy = m.h / 2;
+    float s = direction == 0 ? 1.f : -1.f;
+    image rotated_image = make_image(m.h, m.w, m.c);
+    for(int c = 0; c < m.c; ++c) {
+        #pragma omp parallel for
+        for(int y = 0; y < m.h; ++y) {
+            for(int x = 0; x < m.w; ++x) {
+                int rx = s*(y - cy) + cy, ry = -s*(x - cx) + cx;
+                float val = get_pixel(m, x, y, c);
+                set_pixel(&rotated_image, rx, ry, c, val);
             }
         }
     }

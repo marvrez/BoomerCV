@@ -87,6 +87,7 @@ image nn_resize(image m, int w, int h);
 image bilinear_resize(image m, int w, int h);
 
 image rotate_image(image m, float rad);
+image rotate_image_left_or_right(image m, int direction); // 0 = left, 1 = right
 image crop_image(image m, int dx, int dy, int w, int h);
 
 // binarizing

@@ -5,10 +5,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-image rotate_image_from_path(char* path, float angle)
+image rotate_image_from_path(char* path, int direction)
 {
     image original = load_image_rgb(path);
-    image out = rotate_image(original, angle*M_PI/180.f);
+    image out = rotate_image_left_or_right(original, direction);
     free_image(&original);
     return out;
 }
@@ -16,23 +16,24 @@ image rotate_image_from_path(char* path, float angle)
 void run_rotate(int argc,  char** argv)
 {
     if(argc < 5) {
-        fprintf(stderr, "usage: ./boomercv rotate -i <input_path> -a <angle_deg> [OPTIONAL PARAMETERS: -o <output_path>]\n");
+        fprintf(stderr, "usage: ./boomercv rotate -i <input_path> [-r to rotate right] [-l to rotate left] [OPTIONAL PARAMETERS: -o <output_path>]\n");
         return;
     }
 
     char input_path[256] = {0}, output_path[512] = {0};
-    float angle = 0.f;
+    int direction = 0;
     for(int i = 1; i < argc; ++i) {
-        if (i < argc - 1) {
-            if (strcmp("-i", argv[i]) == 0) {
-                strcpy(input_path, argv[i+1]);
-            }
-            else if (strcmp("-o", argv[i]) == 0) {
-                strcpy(output_path, argv[i+1]);
-            }
-            else if (strcmp("-a", argv[i]) == 0) {
-                angle = atof(argv[i+1]);
-            }
+        if (strcmp("-i", argv[i]) == 0) {
+            strcpy(input_path, argv[i+1]);
+        }
+        else if (strcmp("-o", argv[i]) == 0) {
+            strcpy(output_path, argv[i+1]);
+        }
+        else if (strcmp("-l", argv[i]) == 0) {
+            direction = 0;
+        }
+        else if (strcmp("-r", argv[i]) == 0) {
+            direction = 1;
         }
     }
     if(input_path[0] == '\0') {
@@ -40,7 +41,7 @@ void run_rotate(int argc,  char** argv)
         return;
     }
 
-    image rotated_image = rotate_image_from_path(input_path, angle);
+    image rotated_image = rotate_image_from_path(input_path, direction);
     if(output_path[0] == '\0') {
         strcat(output_path, input_path);
         int n = strlen(input_path);
