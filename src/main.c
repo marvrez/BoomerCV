@@ -13,6 +13,7 @@ extern void run_webcam(int argc, char** argv);
 extern void run_flow(int argc, char** argv);
 extern void run_phash(int argc, char** argv);
 extern void run_rotate(int argc,  char** argv);
+extern void run_panorama(int argc, char** argv);
 
 int main(int argc, char** argv)
 {
@@ -53,6 +54,9 @@ int main(int argc, char** argv)
     }
     else if (strcmp(argv[1], "rotate") == 0) {
         run_rotate(argc, argv);
+    }
+    else if (strcmp(argv[1], "panorama") == 0) {
+        run_panorama(argc, argv);
     }
     else {
         fprintf(stderr, "%s is not a valid option\n", argv[1]);
