@@ -5,10 +5,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 image panorama_from_paths(char* path1, char* path2, float sigma, float thresh, float inlier_thresh,
                               int nms_window_size, int cutoff, int num_iters, int debug)
 {
+    srand(time(0));
     image im1 = load_image_rgb(path1);
     image im2 = load_image_rgb(path2);
 
