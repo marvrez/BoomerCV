@@ -28,6 +28,14 @@ matrix make_identity(int n)
     return m;
 }
 
+matrix make_translation_homography(float dx, float dy)
+{
+    matrix H = make_identity(3);
+    H.data[0][2] = dx;
+    H.data[1][2] = dy;
+    return H;
+}
+
 matrix copy_matrix(matrix m)
 {
     matrix c;
@@ -154,4 +162,17 @@ matrix invert_matrix(matrix m)
     }
     free_matrix(&c);
     return inv;
+}
+
+matrix least_squares(matrix X, matrix Y)
+{
+    matrix empty = { 0 };
+    matrix Xt = transpose_matrix(X);
+    matrix XtX = multiply_matrix(Xt, X);
+    matrix XtXinv = invert_matrix(XtX);
+    if(!XtXinv.data) return empty;
+    matrix a = multiply_matrix(XtXinv, Xt);
+    matrix beta = multiply_matrix(a, Y);
+    free_matrix(&Xt); free_matrix(&XtX); free_matrix(&XtXinv); free_matrix(&a);
+    return beta;
 }
