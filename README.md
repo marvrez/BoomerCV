@@ -36,5 +36,6 @@ Where `<function>` is currently one of
 * `flow` - run optical flow demo with webcam
 * `phash` - compare the phash'es of two images
 * `rotate` - rotate an image 90 degrees left or right
+* `panorama` - stitch two input images together to create a panorama
 
 More instructions will be shown about these functions if you run them without any additional parameters.
