@@ -21,7 +21,7 @@ void optical_flow_webcam(int smooth, int stride, int div)
         image v = optical_flow_images(resized, prev_resized, smooth, stride);
         fps = 1.f / (time_now() - start_time);
         printf("fps: %.1f\r", fps);
-        draw_flow(&cur_copy, v, smooth*div);
+        draw_flow(&cur_copy, v, smooth*div*2);
         int key = show_image(cur_copy, "optical flow memes", 5);
         start_time = time_now();
 

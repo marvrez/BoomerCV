@@ -76,13 +76,13 @@ image flow_smooth_image(image m, int w)
     for(int k = 0; k < m.c; ++k) {
         int start_pos = k*n;
         #pragma omp parallel for
-        for(int y = 0; y < m.h; ++y) {
-            for(int x = 0; x < m.w; ++x) {
-                float val = integ.data[start_pos + x - offset - 1 + m.w*(y - offset -1)] -
-                            integ.data[start_pos + x + offset + m.w*(y - offset - 1)] -
-                            integ.data[start_pos + x - offset - 1 + m.w*(y + offset)] +
-                            integ.data[start_pos + x + offset + m.w*(y + offset)];
-                S.data[start_pos + x + y*m.w] = val*scale_factor;
+        for(int y = -offset; y < m.h - offset; ++y) {
+            for(int x = -offset; x < m.w - offset; ++x) {
+                float v = get_pixel(integ, x, y, k) -
+                          get_pixel(integ, x+offset, y, k) -
+                          get_pixel(integ, x, y+offset, k) +
+                          get_pixel(integ, x+offset, y+offset, k);
+                S.data[start_pos + (x + offset) + (y+offset)*m.w] = v*scale_factor;
             }
         }
     }
@@ -135,7 +135,7 @@ image make_time_structure_matrix(image cur, image prev, int w)
     }
 
     #pragma omp parallel for
-    for(int i = 0;i < n; ++i) {
+    for(int i = 0; i < n; ++i) {
         T.data[i]     = Ix.data[i]*Ix.data[i];
         T.data[i+n]   = Iy.data[i]*Iy.data[i];
         T.data[i+2*n] = Ix.data[i]*Iy.data[i];
