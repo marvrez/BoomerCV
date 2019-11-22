@@ -30,7 +30,7 @@ image convolve_image(image m, image filter, int preserve)
     return out;
 }
 
-inline void transpose_1d_filter(image* filter)
+static inline void transpose_1d_filter(image* filter)
 {
     assert(filter->w == 1 || filter->h == 1);
     int tmp = filter->w;
@@ -56,7 +56,7 @@ image make_gy_filter()
     return f;
 }
 
-inline image make_sharpen_filter()
+static inline image make_sharpen_filter()
 {
     image f = make_image(3,3,1);
     f.data[0] =  0; f.data[1] = -1; f.data[2] =  0;
@@ -65,7 +65,7 @@ inline image make_sharpen_filter()
     return f;
 }
 
-inline image make_1d_box(int w)
+static inline image make_1d_box(int w)
 {
     image f = make_image(1, w, 1);
     for (int i = 0; i < w; ++i) {
@@ -74,7 +74,7 @@ inline image make_1d_box(int w)
     return f;
 }
 
-inline image make_1d_gaussian(float sigma)
+static inline image make_1d_gaussian(float sigma)
 {
     int w = ((int)(3*sigma)) | 1;
     int offset = w / 2;

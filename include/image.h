@@ -12,14 +12,14 @@ typedef struct {
     float* data;
 } image;
 
-inline float get_pixel(image m, int x, int y, int c)
+static inline float get_pixel(image m, int x, int y, int c)
 {
     if (x < 0 || x >= m.w || y < 0 || y >=m.h) return 0;
     if (c < 0 || c >= m.c) return 0;
     return m.data[x + y*m.w + c*m.h*m.w];
 }
 
-inline void set_pixel(image* m, int x, int y, int c, float v)
+static inline void set_pixel(image* m, int x, int y, int c, float v)
 {
     if (x < 0 || x >= m->w || y < 0 || y >=m->h) return;
     if (c < 0 || c >= m->c) return;
