@@ -2,7 +2,7 @@ OPENCV ?= 0
 OPENMP ?= 0
 DEBUG  ?= 0
 
-OBJ= main.o phash.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o # insert objectfiles here
+OBJ= main.o panorama.o phash.o matrix.o image.o utils.o draw.o filter.o hough.o canny.o blob.o harris.o flow.o # insert objectfiles here
 EXECOBJA= panorama_images.o rotate.o compare_images.o resize.o grayscale.o binarize.o apply_filter.o find_lines.o find_blobs.o find_corners.o webcam.o flow_cam.o # add executables here
 
 VPATH=./src/:./examples

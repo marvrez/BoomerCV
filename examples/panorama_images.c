@@ -1,22 +1,28 @@
 #include "image.h"
+#include "panorama.h"
 #include "utils.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void panorama_from_paths(char* path1, char* path2, float sigma, float thresh, float inlier_thresh,
-                              int nms_window_size, int cutoff, int num_iters)
+image panorama_from_paths(char* path1, char* path2, float sigma, float thresh, float inlier_thresh,
+                              int nms_window_size, int cutoff, int num_iters, int debug)
 {
     image im1 = load_image_rgb(path1);
     image im2 = load_image_rgb(path2);
 
+    image out;
     double t1 = time_now();
+    if(debug) out = find_and_draw_matches(im1, im2, sigma, thresh, nms_window_size);
+    else out = panorama_image(im1, im2, sigma, thresh, nms_window_size, inlier_thresh, num_iters, cutoff);
     double t2 = time_now();
     printf("took %.3lf seconds to create panorama\n", t2-t1);
 
     free_image(&im1);
     free_image(&im2);
+
+    return out;
 }
 
 void run_panorama(int argc, char** argv)
@@ -37,7 +43,7 @@ void run_panorama(int argc, char** argv)
     }
 
     float sigma=2.f, thresh=2.f, inlier_thresh=2.f;
-    int nms_window_size=3, cutoff=30, num_iters=10000;
+    int nms_window_size=3, cutoff=30, num_iters=10000, debug=0;
     for (int i = 4; i < argc; ++i) {
         if (i < argc - 1) {
             if (strcmp("-sigma", argv[i]) == 0) {
@@ -58,9 +64,16 @@ void run_panorama(int argc, char** argv)
             else if (strcmp("-nms_window_size", argv[i]) == 0) {
                 nms_window_size = atoi(argv[i+1]);
             }
+            else if (strcmp("-debug", argv[i]) == 0) {
+                debug = atoi(argv[i+1]);
+            }
         }
     }
 
-    panorama_from_paths(path1, path2, sigma, thresh, inlier_thresh, 
-                        nms_window_size, cutoff, num_iters);
+    const char* output_path = debug ? "panorama_debug" : "panorama";
+
+    image panorama = panorama_from_paths(path1, path2, sigma, thresh, inlier_thresh,
+                                         nms_window_size, cutoff, num_iters, debug);
+    save_image_png(panorama, output_path);
+    free_image(&panorama);
 }
