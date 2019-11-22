@@ -48,15 +48,15 @@ cc_label* cc_label_image(image m)
     }
     free(queue);
     free(labels);
-	return out_labels;
+    return out_labels;
 }
 
 box* detect_blobs(image m, int* num_boxes, int(*box_filter)(int width, int height))
 {
-	if (!m.data || m.c != 1) {
-		if (num_boxes) *num_boxes = 0;
-		return 0;
-	}
+    if (!m.data || m.c != 1) {
+        if (num_boxes) *num_boxes = 0;
+        return 0;
+    }
     cc_label* labels = cc_label_image(m);
     int num_labels = (int)sb_count(labels);
 
@@ -83,7 +83,7 @@ box* detect_blobs(image m, int* num_boxes, int(*box_filter)(int width, int heigh
     sb_free(labels);
 
     *num_boxes = (int)sb_count(out_boxes);
-	return out_boxes;
+    return out_boxes;
 }
 
 void draw_blob_detections(image* m, box* detections, int num_detections)
