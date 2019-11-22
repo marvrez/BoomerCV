@@ -41,12 +41,12 @@ static inline image both_images(image a, image b)
 // Calculates L1 distance between two same-size floating point arrays
 static inline float l1_distance(float* a, float* b, int n)
 {
-    float d = 0;
-    #pragma omp parallel for
+    float dist = 0;
+    #pragma omp parallel for reduction(+:dist)
     for(int i = 0; i < n; ++i) {
-        d += fabsf(a[i] - b[i]);
+        dist += fabsf(a[i] - b[i]);
     }
-    return d;
+    return dist;
 }
 
 // Draws lines between matching pixels in two images.
