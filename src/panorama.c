@@ -1,31 +1,15 @@
 #include "panorama.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-
-point make_point(float x, float y)
-{
-    point p = { x, y };
-    return p;
-}
+#include <string.h>
 
 static inline matrix make_homogenous(point p)
 {
     matrix h = make_matrix(3, 1);
     h.data[0][0] = p.x, h.data[1][0] = p.y, h.data[2][0] = 1.f;
     return h;
-}
-
-// Apply a projective transformation to a point.
-// matrix H: homography to project point.
-// point p: point to project.
-point project_point(matrix H, point p)
-{
-    matrix c = make_homogenous(p);
-    matrix x = multiply_matrix(H, c);
-    point q = make_point(x.data[0][0] / x.data[2][0], x.data[1][0] / x.data[2][0]);
-    free_matrix(&c); free_matrix(&x);
-    return q;
 }
 
 // compute L2 distance between two points
@@ -90,13 +74,100 @@ static inline image draw_matches(image a, image b, match* matches, int n, int nu
     return both;
 }
 
-int model_inliers(matrix H, match *m, int n, float thresh)
+static inline void shuffle_matches(match* m, int n)
 {
-    return -1; //TODO
+    for(int i = n - 1; i > 0; --i){
+        int j = rand() % (i + 1);
+        match tmp = m[i];
+        m[i] = m[j];
+        m[j] = tmp;
+    }
+}
+
+// Apply a projective transformation to a point.
+// matrix H: homography to project point.
+// point p: point to project.
+point project_point(matrix H, point p)
+{
+    matrix c = make_homogenous(p);
+    matrix x = multiply_matrix(H, c);
+    point q = { x.data[0][0] / x.data[2][0], x.data[1][0] / x.data[2][0] };
+    free_matrix(&c); free_matrix(&x);
+    return q;
+}
+
+// Computes homography between two images given matching pixels.
+// returns: matrix representing homography H that maps image a to image b.
+matrix compute_homography(match* matches, int n)
+{
+    // estimate projection parameters
+    matrix M = make_matrix(n*2, 8), b = make_matrix(n*2, 1);
+    for(int i = 0; i < n; ++i) {
+        float x = matches[i].p.x, x_proj = matches[i].q.x;
+        float y = matches[i].p.y, y_proj = matches[i].q.y;
+        float data0[8] = { x, y, 1, 0, 0, 0, -x*x_proj, -y*x_proj };
+        float data1[8] = { 0, 0, 0, x, y, 1, -x*y_proj, -y*y_proj };
+        memcpy(*(M.data+2*i), data0, sizeof(data0));
+        memcpy(*(M.data+2*i+1), data1, sizeof(data1));
+        b.data[2*i][0] = x_proj;
+        b.data[2*i+1][0] = y_proj;
+    }
+    matrix H_hat = least_squares(M, b);
+    free_matrix(&M); free_matrix(&b);
+
+    matrix empty = {0};
+    if(!H_hat.data) return empty;
+
+    matrix H = make_matrix(3, 3);
+
+    for(int i = 0; i < M.cols; ++i) {
+        H.data[i / 3][i % 3] = H_hat.data[i][0];
+    }
+    H.data[2][2] = 1;
+
+    free_matrix(&H_hat);
+    return H;
+}
+
+static inline matrix RANSAC(match* m, int n, float thresh, int k, int cutoff)
+{
+    int best = -1;
+    matrix Hb = make_translation_homography(256, 0), H = make_matrix(3, 3);
+    for(int i = 0; i < k; ++i) {
+        shuffle_matches(m, n);
+        H = compute_homography(m, 4);
+        int num_inliers = model_inliers(H, m, n, thresh);
+        if(num_inliers > best) {
+            best = num_inliers;
+            Hb = compute_homography(m, num_inliers);
+            num_inliers = model_inliers(Hb, m, n, thresh);
+            if(num_inliers > best) best = num_inliers;
+            if(best > cutoff) break;
+        }
+    }
+    printf("found %d inliers\n", best);
+    free_matrix(&H);
+    return Hb;
+}
+
+int model_inliers(matrix H, match* m, int n, float thresh)
+{
+    int count = 0;
+    for(int i = 0; i < n; ++i) {
+        point proj = project_point(H, m[count].p), q = m[count].q;
+        float dist = point_distance(proj, q);
+        if(dist < thresh) count++;
+        else {
+            match tmp = m[count];
+            for(int j = count; j < n-1; ++j) m[j] = m[j+1];
+            m[n-1] = tmp;
+        }
+    }
+    return count;
 }
 
 // compare matches a and b
-// 0 if same, 1 if a > bm, -1 if a < b
+// 0 if same, 1 if a > b, -1 if a < b
 static inline int match_compare(const void* a, const void* b)
 {
     match* ma = (match*)a;
@@ -140,6 +211,11 @@ match* match_descriptors(descriptor* a, int an, descriptor* b, int bn, int* mn)
     return m;
 }
 
+image combine_images(image a, image b, matrix H)
+{
+    return make_image(1,1,1);
+}
+
 image panorama_image(image a, image b, float sigma, float thresh, int nms, float inlier_thresh, int iters, int cutoff, int draw_matches)
 {
     int num_a=0, num_b=0, num_matches=0;
@@ -147,7 +223,7 @@ image panorama_image(image a, image b, float sigma, float thresh, int nms, float
     descriptor* bd = harris_corner_detector(b, sigma, thresh, nms, &num_b);
     match* m = match_descriptors(ad, num_a, bd, num_b, &num_matches);
 
-    matrix H = make_matrix(1,1); // TODO
+    matrix H = RANSAC(m, num_matches, thresh, iters, cutoff);
 
     if(draw_matches) {
         draw_corners(&a, ad, num_a);
@@ -157,7 +233,8 @@ image panorama_image(image a, image b, float sigma, float thresh, int nms, float
     }
     free_descriptors(ad, num_a); free_descriptors(bd, num_b); free(m);
 
-    return make_empty_image(1,1,1);
+    image panorama = combine_images(a, b, H);
+    return panorama;
 }
 
 // Draw the matches with inliers in green between two images.

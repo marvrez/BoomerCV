@@ -17,7 +17,6 @@ typedef struct {
 } match;
 
 // projection functions
-point make_point(float x, float y);
 point project_point(matrix H, point p);
 matrix compute_homography(match* matches, int n);
 image cylindrical_project(image m, float f);
