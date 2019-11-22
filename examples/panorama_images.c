@@ -14,8 +14,8 @@ image panorama_from_paths(char* path1, char* path2, float sigma, float thresh, f
 
     image out;
     double t1 = time_now();
-    if(debug) out = find_and_draw_matches(im1, im2, sigma, thresh, nms_window_size);
-    else out = panorama_image(im1, im2, sigma, thresh, nms_window_size, inlier_thresh, num_iters, cutoff);
+    out = panorama_image(im1, im2, sigma, thresh, nms_window_size,
+                         inlier_thresh, num_iters, cutoff, debug);
     double t2 = time_now();
     printf("took %.3lf seconds to create panorama\n", t2-t1);
 

@@ -9,6 +9,25 @@ point make_point(float x, float y)
     return p;
 }
 
+static inline matrix make_homogenous(point p)
+{
+    matrix h = make_matrix(3, 1);
+    h.data[0][0] = p.x, h.data[1][0] = p.y, h.data[2][0] = 1.f;
+    return h;
+}
+
+// Apply a projective transformation to a point.
+// matrix H: homography to project point.
+// point p: point to project.
+point project_point(matrix H, point p)
+{
+    matrix c = make_homogenous(p);
+    matrix x = multiply_matrix(H, c);
+    point q = make_point(x.data[0][0] / x.data[2][0], x.data[1][0] / x.data[2][0]);
+    free_matrix(&c); free_matrix(&x);
+    return q;
+}
+
 // compute L2 distance between two points
 static inline float point_distance(point p, point q)
 {
@@ -71,6 +90,11 @@ static inline image draw_matches(image a, image b, match* matches, int n, int nu
     return both;
 }
 
+int model_inliers(matrix H, match *m, int n, float thresh)
+{
+    return -1; //TODO
+}
+
 // compare matches a and b
 // 0 if same, 1 if a > bm, -1 if a < b
 static inline int match_compare(const void* a, const void* b)
@@ -116,23 +140,30 @@ match* match_descriptors(descriptor* a, int an, descriptor* b, int bn, int* mn)
     return m;
 }
 
-image panorama_image(image a, image b, float sigma, float thresh, int nms, float inlier_thresh, int iters, int cutoff)
-{
-    return make_empty_image(1,1,1);
-}
-
-// find corners, match them and draw them between two images
-image find_and_draw_matches(image a, image b, float sigma, float thresh, int nms)
+image panorama_image(image a, image b, float sigma, float thresh, int nms, float inlier_thresh, int iters, int cutoff, int draw_matches)
 {
     int num_a=0, num_b=0, num_matches=0;
     descriptor* ad = harris_corner_detector(a, sigma, thresh, nms, &num_a);
     descriptor* bd = harris_corner_detector(b, sigma, thresh, nms, &num_b);
     match* m = match_descriptors(ad, num_a, bd, num_b, &num_matches);
 
-    draw_corners(&a, ad, num_a);
-    draw_corners(&b, bd, num_b);
-    image lines_image = draw_matches(a, b, m, num_matches, 0);
+    matrix H = make_matrix(1,1); // TODO
 
+    if(draw_matches) {
+        draw_corners(&a, ad, num_a);
+        draw_corners(&b, bd, num_b);
+        image matches_image = draw_inliers(a, b, H, m, num_matches, inlier_thresh);
+        save_image_png(matches_image, "matches");
+    }
     free_descriptors(ad, num_a); free_descriptors(bd, num_b); free(m);
+
+    return make_empty_image(1,1,1);
+}
+
+// Draw the matches with inliers in green between two images.
+image draw_inliers(image a, image b, matrix H, match* m, int n, float thresh)
+{
+    int inliers = model_inliers(H, m, n, thresh);
+    image lines_image = draw_matches(a, b, m, n, inliers);
     return lines_image;
 }
