@@ -280,7 +280,7 @@ image panorama_image(image a, image b, float sigma, float thresh, int nms, float
     descriptor* bd = harris_corner_detector(b, sigma, thresh, nms, &num_b);
     match* m = match_descriptors(ad, num_a, bd, num_b, &num_matches);
 
-    matrix H = RANSAC(m, num_matches, thresh, iters, cutoff);
+    matrix H = RANSAC(m, num_matches, inlier_thresh, iters, cutoff);
 
     if(draw_matches) {
         draw_corners(&a, ad, num_a);
