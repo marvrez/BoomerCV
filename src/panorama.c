@@ -1,9 +1,28 @@
 #include "panorama.h"
 
+#include "utils.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+
+static inline float bilinear_interpolate(image m, float x, float y, int c)
+{
+    int lx = (int) floorf(x), ly = (int) floorf(y);
+    float dx = x - lx, dy = y - ly;
+    float interpolated_val = get_pixel(m, x, y, c)*(1-dx)*(1-dy) +
+                             get_pixel(m, x+1, y, c)*dx*(1-dy) +
+                             get_pixel(m, x, y+1, c)*(1-dx)*dy +
+                             get_pixel(m, x+1, y+1, c)*dx*dy;
+    return interpolated_val;
+}
+
+static inline point make_point(float x, float y)
+{
+    point p = {x, y};
+    return p;
+}
 
 static inline matrix make_homogenous(point p)
 {
@@ -140,8 +159,6 @@ static inline matrix RANSAC(match* m, int n, float thresh, int k, int cutoff)
         if(num_inliers > best) {
             best = num_inliers;
             Hb = compute_homography(m, num_inliers);
-            num_inliers = model_inliers(Hb, m, n, thresh);
-            if(num_inliers > best) best = num_inliers;
             if(best > cutoff) break;
         }
     }
@@ -213,7 +230,47 @@ match* match_descriptors(descriptor* a, int an, descriptor* b, int bn, int* mn)
 
 image combine_images(image a, image b, matrix H)
 {
-    return make_image(1,1,1);
+    matrix Hinv = invert_matrix(H);
+
+    // Project the corners of image b into image a coordinates.
+    point c1 = project_point(Hinv, make_point(0, 0));
+    point c2 = project_point(Hinv, make_point(b.w-1, 0));
+    point c3 = project_point(Hinv, make_point(0, b.h-1));
+    point c4 = project_point(Hinv, make_point(b.w-1, b.h-1));
+
+    // Find top left and bottom right corners of image b warped into image a.
+    point topleft  = { min4f(c1.x, c2.x, c3.x, c4.x), min4f(c1.y, c2.y, c3.y, c4.y) };
+    point botright = { max4f(c1.x, c2.x, c3.x, c4.x), max4f(c1.y, c2.y, c3.y, c4.y) };
+
+    // Find how big our new image should be and the offsets from image a.
+    int dx = MIN(0.f, topleft.x), dy = MIN(0.f, topleft.y);
+    int w = MAX(a.w, botright.x) - dx, h = MAX(a.h, botright.y) - dy;
+
+    image out = make_image(w, h, a.c);
+    // Paste image a into the new image offset by dx and dy.
+    for(int k = 0; k < a.c; ++k) {
+        #pragma omp parallel for
+        for(int y = 0; y < a.h; ++y) {
+            for(int x = 0; x < a.w; ++x) {
+                set_pixel(&out, x-dx, y-dy, k, get_pixel(a, x, y, k));
+            }
+        }
+    }
+    // Paste in image b by projecting back to b and interpolate if within bounds
+    for(int k = 0; k < a.c; ++k) {
+        #pragma omp parallel for
+        for(int y = topleft.y; y < botright.y; ++y) {
+            for(int x = topleft.x; x < botright.x; ++x) {
+                point p = project_point(H, make_point(x, y));
+                if(p.x >= 0 && p.x < b.w && p.y >= 0 && p.y < b.h) {
+                    float v = bilinear_interpolate(b, p.x, p.y, k);
+                    set_pixel(&out, x-dx, y-dy, k, v);
+                }
+            }
+        }
+    }
+
+    return out;
 }
 
 image panorama_image(image a, image b, float sigma, float thresh, int nms, float inlier_thresh, int iters, int cutoff, int draw_matches)

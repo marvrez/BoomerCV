@@ -27,3 +27,14 @@ float min3f(float a, float b, float c)
 {
     return (a < b) ? ( (a < c) ? a : c) : ( (b < c) ? b : c);
 }
+
+float max4f(float a, float b, float c, float d)
+{
+    return MAX(a, MAX(b, MAX(c, d)));
+}
+
+float min4f(float a, float b, float c, float d)
+{
+    return MIN(a, MIN(b, MIN(c, d)));
+}
+
