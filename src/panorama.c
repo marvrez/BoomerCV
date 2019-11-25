@@ -148,6 +148,28 @@ matrix compute_homography(match* matches, int n)
     return H;
 }
 
+
+// Project an image onto a cylinder then flatten it, given focal lengths in pixels
+image cylindrical_project(image m, float f)
+{
+    int xc = m.w / 2, yc = m.h / 2;
+    int w = 2*f*atan2f(xc, f);
+    image out = make_image(w, m.h, m.c);
+    for(int k = 0; k < out.c; ++k) {
+        #pragma omp parallel for
+        for(int y = 0; y < out.h; ++y) {
+            for(int x = 0; x < out.w; ++x) {
+                float theta = (x - w/2) / f;
+                float X = f*sinf(theta), Y = y-yc, Z = f*cosf(theta); // cylinder coordinates
+                float mx = f*X/Z + xc, my = f*Y/Z + yc; // unrolled coordinates
+                float val = bilinear_interpolate(m, mx, my, k);
+                set_pixel(&out, x, y, k, val);
+            }
+        }
+    }
+    return out;
+}
+
 static inline matrix RANSAC(match* m, int n, float thresh, int k, int cutoff)
 {
     int best = -1;
@@ -155,10 +177,12 @@ static inline matrix RANSAC(match* m, int n, float thresh, int k, int cutoff)
     for(int i = 0; i < k; ++i) {
         shuffle_matches(m, n);
         H = compute_homography(m, 4);
+        if(!H.data) continue;
         int num_inliers = model_inliers(H, m, n, thresh);
         if(num_inliers > best) {
             best = num_inliers;
-            Hb = compute_homography(m, num_inliers);
+            H = compute_homography(m, num_inliers);
+            if(H.data) Hb = H;
             if(best > cutoff) break;
         }
     }
@@ -257,8 +281,8 @@ image combine_images(image a, image b, matrix H)
         }
     }
     // Paste in image b by projecting back to b and interpolate if within bounds
+    #pragma omp parallel for
     for(int k = 0; k < a.c; ++k) {
-        #pragma omp parallel for
         for(int y = topleft.y; y < botright.y; ++y) {
             for(int x = topleft.x; x < botright.x; ++x) {
                 point p = project_point(H, make_point(x, y));
